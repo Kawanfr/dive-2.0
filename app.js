@@ -10,7 +10,8 @@ const map = L.map('map', {
 
 // --- CONFIGURAÇÃO DE TEMA (DARK/LIGHT) ---
 const currentHour = new Date().getHours();
-const isNight = currentHour >= 18 || currentHour < 6; // Noite entre 18h e 06h
+const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const isNight = prefersDark || (currentHour >= 18 || currentHour < 6); // Preferência do sistema OU horário
 
 let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 let attribution = '&copy; OpenStreetMap contributors';
@@ -222,13 +223,22 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
     });
 });
 
+// Função utilitária de Debounce para performance
+function debounce(func, wait) {
+    let timeout;
+    return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+    };
+}
+
 // Event Listener para o campo de busca
 const searchInput = document.getElementById('search-input');
 if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
+    searchInput.addEventListener('input', debounce((e) => {
         currentSearch = e.target.value; // Atualiza o termo de busca
         renderMarkers(currentFilter); // Re-renderiza mantendo o filtro de categoria atual
-    });
+    }, 300)); // Aguarda 300ms após a última digitação para executar
 }
 
 // --- GEOLOCALIZAÇÃO ATIVA ---
