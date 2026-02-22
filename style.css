@@ -53,13 +53,14 @@ body, html {
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1000; /* Acima do mapa */
+    z-index: 1000;
     display: flex;
-    flex-wrap: wrap; /* Permite quebrar linha em telas pequenas */
-    justify-content: center; /* Centraliza os itens */
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
     background-color: rgba(255, 255, 255, 0.9);
     padding: 5px;
+    max-width: 95%; /* Evita que vase a tela */
     border-radius: 25px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.15);
 }
@@ -273,4 +274,39 @@ body.dark-mode .popup-body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+/* --- RESPONSIVIDADE MOBILE (Telas menores que 600px) --- */
+@media (max-width: 600px) {
+    #filter-container {
+        top: 10px;
+        width: 95%;
+        justify-content: flex-start; /* Alinha à esquerda para scroll */
+        flex-wrap: nowrap; /* Impede quebra de linha (empilhamento) */
+        overflow-x: auto; /* Habilita rolagem horizontal */
+        padding: 10px;
+        border-radius: 15px;
+        /* Esconde barra de rolagem para visual limpo */
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+    
+    #filter-container::-webkit-scrollbar {
+        display: none; /* Chrome/Safari */
+    }
+
+    /* Aumenta áreas de toque */
+    .filter-btn, #radius-filter, #search-input {
+        flex: 0 0 auto; /* Impede que encolham */
+        padding: 10px 16px; /* Botões maiores */
+        font-size: 15px;
+    }
+
+    #search-input {
+        width: 120px;
+    }
+
+    #center-btn {
+        bottom: 20px; /* Mais próximo do polegar */
+    }
 }

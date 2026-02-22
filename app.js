@@ -360,13 +360,17 @@ if ('geolocation' in navigator) {
         },
         (error) => {
             console.error('Erro de Geolocalização:', error);
-            alert('Erro ao obter localização: ' + error.message); // Alerta visual para debug
-            // O mapa permanece na posição inicial (fallback) se der erro ou permissão negada
+            if (error.code === 1) {
+                alert("Permissão de GPS negada. Por favor, permita o acesso nas configurações do navegador.");
+            } else {
+                // Não spamar alerta em erros de timeout, apenas logar
+                console.warn('Tentando reconectar GPS...');
+            }
         },
         {
-            enableHighAccuracy: false, // MUDANÇA: False usa WiFi/Torres (muito mais rápido e compatível)
-            maximumAge: 30000, // Aceita posição cacheada de 30s
-            timeout: 30000 // Aumenta o tempo de espera para 30s (antes era 10s)
+            enableHighAccuracy: true, // MUDANÇA: True força o uso do GPS (melhor para mobile na rua)
+            maximumAge: 0, // Não aceita posições velhas cacheadas
+            timeout: 15000 // Espera 15s antes de tentar de novo
         }
     );
 }
@@ -390,7 +394,7 @@ centerBtn.addEventListener('click', () => {
             (err) => {
                 alert("Erro ao forçar GPS: " + err.message);
             },
-            { enableHighAccuracy: false, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 10000 }
         );
     }
 });

@@ -25,8 +25,8 @@
         <body>
             <!-- Filtros Superiores -->
             <div id="filter-container">
-                <input type="text" id="search-input" placeholder="🔍 Buscar local..." aria-label="Buscar local">
-                <select id="radius-filter" aria-label="Selecione o raio de busca">
+                <input type="text" id="search-input" placeholder="🔍 Buscar local...">
+                <select id="radius-filter">
                     <option value="all">🌐 Tudo</option>
                     <option value="1000">1 km</option>
                     <option value="3000">3 km</option>
@@ -44,7 +44,7 @@
              <div id="map"></div>
 
              <!-- Botão de Centralizar -->
-             <button id="center-btn" aria-label="Centralizar mapa">📍</button>
+             <button id="center-btn">📍</button>
 
              <!-- Leaflet JS -->
               <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -55,7 +55,7 @@
               <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
               <!-- Nossa Lógica -->
-               <script src="app.js?v=13"></script>
+               <script src="app.js?v=14"></script>
             
         </body>
 </html>
