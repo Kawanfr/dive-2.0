@@ -294,15 +294,15 @@ function checkProximity(userPos) {
             showToast(title, handleClick);
 
             // Se tiver permissão, envia notificação nativa
-            if (Notification.permission === 'granted') {
-                const notif = new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png' });
-                
-                // Torna a notificação nativa clicável
-                notif.onclick = () => {
-                    window.focus(); // Traz a janela do navegador para frente
-                    handleClick();
-                    notif.close();
-                };
+            if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+                        vibrate: [200, 100, 200], // Padrão de vibração: Toca, Pausa, Toca
+                        tag: 'dive-proximity' // Evita que acumule muitas notificações iguais
+                    });
+                });
             } else {
                 // Fallback: Alerta visual simples se notificação for bloqueada
                 console.log("Notificação de proximidade:", title);

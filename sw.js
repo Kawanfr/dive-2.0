@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-v12';
+const CACHE_NAME = 'dive-v13';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -43,6 +43,23 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
             );
+        })
+    );
+});
+
+// Evento de clique na notificação (Barra de Status)
+self.addEventListener('notificationclick', (event) => {
+    event.notification.close(); // Fecha a notificação ao clicar
+
+    // Tenta focar na janela do app se ela já estiver aberta, ou abre uma nova
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+            for (const client of clientList) {
+                if (client.url.includes('index.html') || client.url === '/' && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) return clients.openWindow('/');
         })
     );
 });
