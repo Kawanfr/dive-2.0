@@ -26,10 +26,19 @@
             <!-- Filtros Superiores -->
             <div id="filter-container">
                 <input type="text" id="search-input" placeholder="🔍 Buscar local...">
+                <select id="radius-filter">
+                    <option value="all">🌐 Tudo</option>
+                    <option value="1000">1 km</option>
+                    <option value="3000">3 km</option>
+                    <option value="5000">5 km</option>
+                </select>
                 <button class="filter-btn active" data-filter="all">Todos</button>
                 <button class="filter-btn" data-filter="agitado">🔥 Agitado</button>
                 <button class="filter-btn" data-filter="tranquilo">🧊 Tranquilo</button>
             </div>
+
+            <!-- Container de Notificações Visuais -->
+            <div id="toast-container"></div>
 
             <!-- Container do Mapa -->
              <div id="map"></div>
@@ -46,7 +55,7 @@
               <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
               <!-- Mossa Lógica -->
-               <script src="app.js"></script>
+               <script src="app.js?v=12"></script>
             
         </body>
 </html>

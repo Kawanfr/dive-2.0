@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-v1';
+const CACHE_NAME = 'dive-v12';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
@@ -14,6 +14,7 @@ const ASSETS_TO_CACHE = [
 
 // Instalação do Service Worker e Cache dos arquivos estáticos
 self.addEventListener('install', (event) => {
+    self.skipWaiting(); // Força o SW a ativar imediatamente, sem esperar
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
@@ -36,6 +37,7 @@ self.addEventListener('fetch', (event) => {
 
 // Atualização do Service Worker (Limpeza de caches antigos)
 self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim()); // Assume o controle de todas as abas abertas imediatamente
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(

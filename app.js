@@ -1,7 +1,7 @@
 //Configuração Inicial do mapa
-//Coodernadas iniciais (ex: Av. Paulista, SP) - Depois mudaremos para o GPS do usuário
-const initialLat = -23.561684;
-const initialLng = -46.655981;
+//Coodernadas iniciais (Rua Saturnino de Oliveira - ZS)
+const initialLat = -23.646184;
+const initialLng = -46.732581;
 const initialZoom = 15;
 
 const map = L.map('map', {
@@ -39,90 +39,42 @@ L.tileLayer(tileUrl, {
 const mockEstablishments = [
     {
         id: 1,
-        name: "Bar do Code",
-        coords: [-23.561684, -46.655981],
-        status: "fire", // fire = cheio/agitado
-        msg: "🔥 Lotação Alta! Promoção de Gin rolando.",
+        name: "Assai Atacadista (João Dias",
+        coords: [-23.646234, -46.729094],
+        status: "fire",
+        msg: "🛒 Supermercado completo. Perfeito para atacado e varejo",
         color: "red"
     },
     {
         id: 2,
-        name: "Café Debug",
-        coords: [-23.563500, -46.654000],
-        status: "chill", // chill = tranquilo
-        msg: "🧊 Ambiente tranquilo. Ótimo para conversar.",
-        color: "#3498db" // Azul
+        name: "Carrefour Hipermercado (João Dias",
+        coords: [-23.642270, -46.734588],
+        status: "chill",
+        msg: "🧊 Mercado rápido para compras do dia a dia.",
+        color: "#3498db"
     },
     {
         id: 3,
-        name: "Pub do Commit",
-        coords: [-23.560000, -46.658000],
-        status: "live", // live = música ao vivo
-        msg: "🎸 Banda de Rock tocando agora!",
-        color: "#f1c40f" // Amarelo
+        name: "Akki Atacadista João Dias",
+        coords: [-23.642038, -46.738812],
+        status: "live",
+        msg: "Perfeito para quem busca variedade e bons preços. Sempre movimentado!",
+        color: "#f1c40f"
     },
     {
         id: 4,
-        name: "Livraria do Front-end",
-        coords: [-23.559500, -46.660000], // Perto da Consolação
-        status: "chill",
-        msg: "📚 Leitura e café. Wi-Fi ultra rápido.",
-        color: "#3498db"
+        name: "Ayumi Supermercado",
+        coords: [-23.649516, -46.733178],
+        status: "fire",
+        msg: "🔥 Variedade e preços competitivos.",
+        color: "red"
     },
     {
         id: 5,
-        name: "Balada Fullstack",
-        coords: [-23.567000, -46.649000], // Perto do Shopping Cidade SP
+        name: "Atacadão ",
+        coords: [-23.668816, -46.736381],
         status: "fire",
-        msg: "🔥 DJ Python tocando as melhores!",
-        color: "red"
-    },
-    {
-        id: 6,
-        name: "Jazz & Java",
-        coords: [-23.562000, -46.653000], // Perto do MASP
-        status: "live",
-        msg: "🎷 Saxofone ao vivo e café gourmet.",
-        color: "#f1c40f"
-    },
-    {
-        id: 7,
-        name: "Terraço da Nuvem",
-        coords: [-23.558000, -46.656000], // Rua Augusta
-        status: "fire",
-        msg: "🍸 Rooftop com vista incrível e drinks.",
-        color: "red"
-    },
-    {
-        id: 8,
-        name: "Bar do Largo",
-        coords: [-23.566300, -46.693800], // Largo da Batata
-        status: "fire",
-        msg: "🔥 Happy Hour bombando no Largo!",
-        color: "red"
-    },
-    {
-        id: 9,
-        name: "Beco das Artes",
-        coords: [-23.556800, -46.686500], // Beco do Batman
-        status: "live",
-        msg: "🎨 Arte de rua e música acústica.",
-        color: "#f1c40f"
-    },
-    {
-        id: 10,
-        name: "Cantina Pinheiros",
-        coords: [-23.568000, -46.685000], // Rua dos Pinheiros
-        status: "chill",
-        msg: "🍝 Massas artesanais e vinho.",
-        color: "#3498db"
-    },
-    {
-        id: 11,
-        name: "Mercadão Gourmet",
-        coords: [-23.565500, -46.694500], // Mercado de Pinheiros
-        status: "chill",
-        msg: "🧊 Produtos frescos e ceviche.",
+        msg: "Atacado e varejo com ótimos preços. Sempre cheio!",
         color: "#3498db"
     }
 ];
@@ -158,6 +110,7 @@ const markersLayer = L.markerClusterGroup().addTo(map);
 // Variáveis de estado global
 let currentFilter = 'all';
 let currentSearch = ''; // Armazena o texto da busca
+let currentRadius = Infinity; // Raio padrão: Infinito (mostra tudo)
 let currentUserPosition = null;
 
 function renderMarkers(filterType) {
@@ -177,8 +130,15 @@ function renderMarkers(filterType) {
         // Filtro de Texto (Nome)
         const matchSearch = place.name.toLowerCase().includes(currentSearch.toLowerCase());
 
-        // Retorna verdadeiro apenas se passar nos DOIS filtros
-        return matchStatus && matchSearch;
+        // Filtro de Distância (Raio)
+        let matchDistance = true;
+        if (currentRadius !== Infinity && currentUserPosition) {
+            const dist = map.distance(currentUserPosition, place.coords);
+            matchDistance = dist <= currentRadius;
+        }
+
+        // Retorna verdadeiro apenas se passar nos TRÊS filtros
+        return matchStatus && matchSearch && matchDistance;
     });
 
     // 3. Adiciona os novos marcadores
@@ -193,7 +153,11 @@ function renderMarkers(filterType) {
         // Link para o Google Maps
         const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords[0]},${place.coords[1]}`;
 
-        L.marker(place.coords, { icon: createIcon(place.color, place.status) })
+        L.marker(place.coords, {
+            icon: createIcon(place.color, place.status),
+            title: place.name, // Tooltip nativo ao passar o mouse
+            alt: `Marcador no mapa: ${place.name}` // Acessibilidade para leitores de tela
+        })
             .addTo(markersLayer) // Adiciona ao grupo, não direto ao mapa
             .bindPopup(`
                 <div class="popup-card">
@@ -210,6 +174,7 @@ function renderMarkers(filterType) {
 
 // Renderização inicial
 renderMarkers('all');
+console.log("DIVE 2.0: Correção de Erros DOM (v11).");
 
 // Event Listeners para os botões de filtro
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -241,15 +206,130 @@ if (searchInput) {
     }, 300)); // Aguarda 300ms após a última digitação para executar
 }
 
+// Event Listener para o filtro de Raio
+const radiusFilter = document.getElementById('radius-filter');
+if (radiusFilter) {
+    radiusFilter.addEventListener('change', (e) => {
+        const value = e.target.value;
+        currentRadius = value === 'all' ? Infinity : parseInt(value);
+        renderMarkers(currentFilter); // Re-renderiza com o novo raio
+    });
+}
+
+// --- SISTEMA DE NOTIFICAÇÕES ---
+const notifiedIds = new Set(); // Armazena IDs já notificados para não repetir
+
+// Solicita permissão no primeiro clique do usuário na página
+document.body.addEventListener('click', () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}, { once: true });
+
+// Função para focar no local e abrir o popup
+function focusOnPlace(place) {
+    // Itera sobre os marcadores para encontrar o correto
+    markersLayer.eachLayer((layer) => {
+        const latLng = layer.getLatLng();
+        // Compara as coordenadas para achar o marcador certo
+        if (latLng.lat === place.coords[0] && latLng.lng === place.coords[1]) {
+            // Usa o método do cluster para dar zoom e abrir, mesmo se estiver agrupado
+            markersLayer.zoomToShowLayer(layer, () => {
+                layer.openPopup();
+            });
+        }
+    });
+}
+
+// Função para mostrar notificação visual (Toast)
+function showToast(message, onClick) {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        console.error("Erro: Elemento 'toast-container' não encontrado no HTML.");
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    
+    // Adiciona interatividade se houver ação de clique
+    if (onClick) {
+        toast.style.cursor = 'pointer';
+        toast.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON') { // Ignora clique no botão X
+                onClick();
+                toast.remove();
+            }
+        };
+    }
+
+    toast.innerHTML = `<span>${message}</span> <button onclick="event.stopPropagation(); this.parentElement.remove()" style="background:none;border:none;color:white;font-size:16px;cursor:pointer;">&times;</button>`;
+    
+    container.appendChild(toast);
+
+    // Remove automaticamente após 5 segundos
+    setTimeout(() => {
+        if (toast.parentElement) toast.remove();
+    }, 5000);
+}
+
+function checkProximity(userPos) {
+    mockEstablishments.forEach(place => {
+        const dist = map.distance(userPos, place.coords);
+        
+        // LOG DE DEBUG: Mostra a distância de TODOS os locais no console
+        console.log(`Distância para ${place.name}: ${Math.round(dist)}m`);
+
+        // RAIO DE ALERTA: 1500m (1.5km)
+        // Definido alto para garantir que seu teste de 1km funcione agora
+        if (dist <= 1500 && !notifiedIds.has(place.id)) {
+            
+            const title = `📍 Você está perto: ${place.name}`;
+            const body = `Apenas ${Math.round(dist)}m de distância! ${place.msg}`;
+
+            // Ação ao clicar na notificação
+            const handleClick = () => focusOnPlace(place);
+
+            // 1. Tenta Notificação Visual (Sempre funciona)
+            showToast(title, handleClick);
+
+            // Se tiver permissão, envia notificação nativa
+            if (Notification.permission === 'granted') {
+                const notif = new Notification(title, { body: body, icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png' });
+                
+                // Torna a notificação nativa clicável
+                notif.onclick = () => {
+                    window.focus(); // Traz a janela do navegador para frente
+                    handleClick();
+                    notif.close();
+                };
+            } else {
+                // Fallback: Alerta visual simples se notificação for bloqueada
+                console.log("Notificação de proximidade:", title);
+            }
+            
+            notifiedIds.add(place.id); // Marca como notificado
+        }
+    });
+}
+
 // --- GEOLOCALIZAÇÃO ATIVA ---
 let userMarker = null;
 let isFirstLocation = true;
+
+// Verifica se o ambiente é seguro (HTTPS ou Localhost)
+if (!window.isSecureContext) {
+    alert("⚠️ Atenção: O GPS só funciona em sites HTTPS ou Localhost.");
+}
 
 if ('geolocation' in navigator) {
     navigator.geolocation.watchPosition(
         (position) => {
             const { latitude, longitude, accuracy } = position.coords;
             currentUserPosition = [latitude, longitude]; // Salva para cálculos
+
+            // Verifica se tem algo perto a cada atualização de GPS
+            checkProximity(currentUserPosition);
 
             // Atualiza ou cria o marcador do usuário
             if (!userMarker) {
@@ -280,12 +360,13 @@ if ('geolocation' in navigator) {
         },
         (error) => {
             console.error('Erro de Geolocalização:', error);
+            alert('Erro ao obter localização: ' + error.message); // Alerta visual para debug
             // O mapa permanece na posição inicial (fallback) se der erro ou permissão negada
         },
         {
-            enableHighAccuracy: true, // Tenta usar GPS para maior precisão
-            maximumAge: 0,
-            timeout: 10000
+            enableHighAccuracy: false, // MUDANÇA: False usa WiFi/Torres (muito mais rápido e compatível)
+            maximumAge: 30000, // Aceita posição cacheada de 30s
+            timeout: 30000 // Aumenta o tempo de espera para 30s (antes era 10s)
         }
     );
 }
@@ -297,7 +378,20 @@ centerBtn.addEventListener('click', () => {
     if (userMarker) {
         map.setView(userMarker.getLatLng(), 16);
     } else {
-        alert('Aguardando localização GPS...');
+        // Se não tiver localização, o botão força uma nova tentativa manual
+        alert('Tentando forçar o GPS...');
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // Sucesso manual
+                const { latitude, longitude } = pos.coords;
+                map.setView([latitude, longitude], 16);
+                alert("Localização encontrada manualmente!");
+            },
+            (err) => {
+                alert("Erro ao forçar GPS: " + err.message);
+            },
+            { enableHighAccuracy: false, timeout: 10000 }
+        );
     }
 });
 
