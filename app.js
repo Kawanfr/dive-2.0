@@ -39,7 +39,7 @@ L.tileLayer(tileUrl, {
 const mockEstablishments = [
     {
         id: 1,
-        name: "Assai Atacadista (João Dias",
+        name: "Assai Atacadista (João Dias)",
         coords: [-23.646234, -46.729094],
         status: "fire",
         msg: "🛒 Supermercado completo. Perfeito para atacado e varejo",
@@ -47,7 +47,7 @@ const mockEstablishments = [
     },
     {
         id: 2,
-        name: "Carrefour Hipermercado (João Dias",
+        name: "Carrefour Hipermercado (João Dias)",
         coords: [-23.642270, -46.734588],
         status: "chill",
         msg: "🧊 Mercado rápido para compras do dia a dia.",
@@ -71,13 +71,48 @@ const mockEstablishments = [
     },
     {
         id: 5,
-        name: "Atacadão ",
+        name: "Atacadão",
         coords: [-23.668816, -46.736381],
         status: "fire",
         msg: "Atacado e varejo com ótimos preços. Sempre cheio!",
         color: "#3498db"
     }
 ];
+
+// --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
+// Função que sincroniza os dados a cada X segundos
+function syncData() {
+    // Lê o "banco de dados" completo
+    const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
+    let hasChanges = false;
+
+    mockEstablishments.forEach(place => {
+        // Se existir dados salvos para este ID
+        if (db[place.id]) {
+            const saved = db[place.id];
+            // Verifica se algo mudou antes de atualizar (para não piscar o mapa à toa)
+            if (place.status !== saved.status || place.msg !== saved.msg) {
+                place.status = saved.status;
+                place.msg = saved.msg;
+                place.color = saved.color;
+                hasChanges = true;
+                console.log(`🔄 Sincronizando: ${place.name}`);
+            }
+        }
+    });
+
+    // Se houve mudança, redesenha o mapa
+    if (hasChanges && typeof renderMarkers === 'function') {
+        renderMarkers(currentFilter);
+        console.log("🗺️ Mapa atualizado com novos dados!");
+    }
+}
+
+// 1. Executa imediatamente
+syncData();
+
+// 2. Executa a cada 2 segundos (Polling) - Garante que funcione sempre!
+setInterval(syncData, 2000);
 
 // Função para gerar ícones dinâmicos
 const createIcon = (color, status) => {

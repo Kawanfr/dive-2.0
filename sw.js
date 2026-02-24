@@ -1,9 +1,11 @@
-const CACHE_NAME = 'dive-v13';
+const CACHE_NAME = 'dive-v15';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
+    './cadastro.html',
     './style.css',
     './app.js',
+    './admin.js',
     './manifest.json',
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
