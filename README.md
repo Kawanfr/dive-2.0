@@ -1,18 +1,25 @@
 # DIVE 2.0 📍
 
-O **DIVE 2.0** é um Progressive Web App (PWA) de mapa interativo focado em ajudar usuários a encontrarem o local ideal para sair, seja um ambiente agitado (🔥) ou tranquilo (🧊).
+O **DIVE 2.0** é um Progressive Web App (PWA) de mapa interativo com atualizações em tempo real.
+
+> ℹ️ **Fase de Testes:** Atualmente, os testes estão sendo realizados **apenas em supermercados**, devido ao alto volume de circulação de pessoas nesses locais, além de serem ambientes onde os usuários buscam ativamente **economizar**.
 
 ## 🚀 Funcionalidades
 
 *   **Mapa Interativo:** Navegação fluida usando Leaflet.js.
-*   **Filtros em Tempo Real:**
-    *   🔥 **Agitado:** Bares e baladas com lotação alta ou música ao vivo.
-    *   🧊 **Tranquilo:** Cafés e locais para conversar.
-    *   🔍 **Busca:** Pesquisa por nome do estabelecimento.
+*   **Filtros Avançados:**
+    *   🔥 **Agitado:** Locais com lotação alta, filas ou muitas promoções.
+    *   🧊 **Tranquilo:** Locais vazios, ideais para compras rápidas.
+    *   🔍 **Busca:** Pesquisa instantânea por nome do estabelecimento.
+    *   📏 **Raio:** Filtre locais por distância (1km, 3km, 5km).
 *   **Geolocalização:** Mostra sua posição atual e calcula a distância até os locais.
 *   **Modo Noturno Automático:** O tema muda automaticamente entre 18h e 06h, invertendo as cores do mapa para conforto visual.
 *   **Clustering:** Agrupamento de marcadores próximos para evitar poluição visual no mapa.
 *   **PWA (Offline):** Funciona sem internet após o primeiro acesso e pode ser instalado no celular.
+*   **Painel Administrativo:** Área exclusiva para estabelecimentos atualizarem seu status e promoções em tempo real (`cadastro.html`).
+*   **Notificações Inteligentes:**
+    *   🔔 **Promoções:** Receba alertas quando um local lança uma oferta.
+    *   📍 **Proximidade:** O app avisa quando você passa perto de um local parceiro.
 
 ## 🛠️ Tecnologias Utilizadas
 
@@ -61,7 +68,8 @@ Para adicionar novos locais, abra o arquivo `app.js` e adicione um novo objeto a
 
 ## 🔮 Melhorias Futuras
 
-*   [ ] Integração com Backend/API Real.
 *   [ ] Sistema de Favoritos (LocalStorage).
+*   [ ] Integração com Backend Real (Node.js/Firebase).
+*   [ ] Sistema de Login para usuários e estabelecimentos.
 *   [ ] Rotas traçadas diretamente no mapa.
-*   [ ] Filtro por raio de distância (ex: "apenas locais a 1km").
+*   [ ] Chat entre usuários no mesmo local.
