@@ -102,16 +102,20 @@ function syncData() {
 
                 // DISPARA NOTIFICAÇÃO NA BARRA DE TAREFAS
                 // Só notifica se NÃO for a primeira carga (abertura do app) e se tiver permissão
-                if (!isFirstSync && Notification.permission === 'granted') {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification(`Nova Promoção em ${place.name}!`, {
-                            body: saved.msg || "Confira o status atualizado agora.",
-                            icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', // Ícone genérico de mapa
-                            vibrate: [200, 100, 200],
-                            tag: `promo-${place.id}`, // Substitui notificação anterior do mesmo local
-                            data: { url: window.location.href } // Dados para abrir o app ao clicar
+                if (!isFirstSync) {
+                    if (Notification.permission === 'granted') {
+                        navigator.serviceWorker.ready.then(registration => {
+                            registration.showNotification(`Nova Promoção em ${place.name}!`, {
+                                body: saved.msg || "Confira o status atualizado agora.",
+                                icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', // Ícone genérico de mapa
+                                vibrate: [200, 100, 200],
+                                tag: `promo-${place.id}`, // Substitui notificação anterior do mesmo local
+                                data: { url: window.location.href } // Dados para abrir o app ao clicar
+                            });
                         });
-                    });
+                    } else {
+                        console.warn(`⚠️ Notificação ignorada para ${place.name}. Motivo: Permissão negada ou padrão.`);
+                    }
                 }
             }
         }
@@ -159,6 +163,11 @@ window.showPromo = (id) => {
     const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
     // Usa '==' para garantir que encontre mesmo se id for string "1" e mock for numero 1
     const place = mockEstablishments.find(p => p.id == id);
+
+    // Tenta pedir permissão de notificação aqui também, caso o usuário não tenha dado antes
+    if (Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
     
     if (!place) return; // Segurança caso o ID não exista
 
