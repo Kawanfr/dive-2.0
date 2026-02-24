@@ -306,12 +306,55 @@ if (radiusFilter) {
 // --- SISTEMA DE NOTIFICAÇÕES ---
 const notifiedIds = new Set(); // Armazena IDs já notificados para não repetir
 
-// Solicita permissão no primeiro clique do usuário na página
-document.body.addEventListener('click', () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
+// Lógica do Botão de Notificação
+const notifBtn = document.getElementById('notif-btn');
+
+function checkNotificationPermission() {
+    if (!('Notification' in window)) {
+        console.log("Este navegador não suporta notificações.");
+        return;
     }
-}, { once: true });
+
+    // Se a permissão for 'default' (ainda não perguntou) ou 'denied', mostra o botão
+    if (Notification.permission === 'default' || Notification.permission === 'denied') {
+        notifBtn.classList.remove('hidden');
+    } else {
+        notifBtn.classList.add('hidden'); // Já tem permissão, esconde o botão
+    }
+}
+
+// Evento de clique no botão de sino
+notifBtn.addEventListener('click', () => {
+    // Se já estiver explicitamente bloqueado, o navegador não deixa pedir de novo.
+    // Precisamos avisar o usuário para mudar manualmente.
+    if (Notification.permission === 'denied') {
+        alert("⚠️ As notificações estão BLOQUEADAS pelo navegador.\n\nPara corrigir:\n1. Clique no ícone de cadeado 🔒 ou configurações ao lado da URL.\n2. Vá em 'Permissões' ou 'Configurações do Site'.\n3. Em 'Notificações', mude para 'Permitir' ou 'Redefinir'.\n4. Recarregue a página.");
+        return;
+    }
+
+    Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+            showToast("✅ Notificações ativadas com sucesso!");
+            notifBtn.classList.add('hidden'); // Esconde o botão após aceitar
+            
+            // TESTE IMEDIATO: Envia uma notificação para provar que funciona
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    registration.showNotification('Teste do DIVE 2.0', {
+                        body: 'Se você está vendo isso, as promoções vão chegar! 🚀',
+                        icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+                        vibrate: [200, 100, 200]
+                    });
+                });
+            }
+        } else {
+            alert("Você bloqueou as notificações. Para ativar, acesse as configurações do navegador (ícone de cadeado na URL).");
+        }
+    });
+});
+
+// Verifica ao carregar a página
+checkNotificationPermission();
 
 // Função para focar no local e abrir o popup
 function focusOnPlace(place) {
@@ -455,9 +498,9 @@ if ('geolocation' in navigator) {
             }
         },
         {
-            enableHighAccuracy: true, // MUDANÇA: True força o uso do GPS (melhor para mobile na rua)
-            maximumAge: 0, // Não aceita posições velhas cacheadas
-            timeout: 15000 // Espera 15s antes de tentar de novo
+            enableHighAccuracy: true, // VOLTANDO: True é necessário para muitos Androids
+            maximumAge: 0, // Não aceita cache velho, queremos a posição real agora
+            timeout: 20000 // 20 segundos para tentar achar
         }
     );
 }

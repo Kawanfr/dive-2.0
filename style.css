@@ -47,6 +47,29 @@ body, html {
     transform: translateY(20px); /* Desce um pouco ao sumir */
 }
 
+/* Botão de Notificação (Sino) */
+#notif-btn {
+    position: absolute;
+    bottom: 150px; /* Acima do botão de centralizar */
+    right: 20px;
+    z-index: 999;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background-color: #e74c3c; /* Vermelho para chamar atenção */
+    color: white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Classe para esconder elementos */
+.hidden {
+    display: none !important;
+}
+
 /* --- Filtros Superiores --- */
 #filter-container {
     position: absolute;

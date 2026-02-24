@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-v19';
+const CACHE_NAME = 'dive-v23';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
