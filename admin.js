@@ -19,13 +19,24 @@ establishments.forEach(place => {
     placeSelect.appendChild(option);
 });
 
-// 2. (Opcional) Poderíamos carregar os dados ao selecionar, mas vamos manter simples por enquanto
-// Limpamos a lógica antiga que buscava apenas o último update solto
-const savedStorage = localStorage.getItem('dive-storage');
-if (savedStorage) {
-    // Apenas log para debug
-    console.log("Banco de dados carregado:", JSON.parse(savedStorage));
-}
+// 2. Função para carregar dados salvos ao selecionar um local
+placeSelect.addEventListener('change', () => {
+    const selectedId = placeSelect.value;
+    const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
+    
+    // Se houver dados salvos para este ID, preenche o formulário
+    if (db[selectedId]) {
+        document.getElementById('place-status').value = db[selectedId].status;
+        document.getElementById('place-msg').value = db[selectedId].msg || "";
+    } else {
+        // Se não houver, limpa ou define padrão
+        document.getElementById('place-status').value = "fire"; // Padrão
+        document.getElementById('place-msg').value = "";
+    }
+});
+
+// Dispara o evento manualmente para o primeiro item ao carregar a página
+placeSelect.dispatchEvent(new Event('change'));
 
 // 3. Salvar Atualização
 form.addEventListener('submit', (e) => {

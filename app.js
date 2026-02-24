@@ -81,6 +81,8 @@ const mockEstablishments = [
 
 // --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
 // Função que sincroniza os dados a cada X segundos
+let isFirstSync = true; // Impede notificações massivas ao abrir o app
+
 function syncData() {
     // Lê o "banco de dados" completo
     const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
@@ -97,6 +99,20 @@ function syncData() {
                 place.color = saved.color;
                 hasChanges = true;
                 console.log(`🔄 Sincronizando: ${place.name}`);
+
+                // DISPARA NOTIFICAÇÃO NA BARRA DE TAREFAS
+                // Só notifica se NÃO for a primeira carga (abertura do app) e se tiver permissão
+                if (!isFirstSync && Notification.permission === 'granted') {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(`Nova Promoção em ${place.name}!`, {
+                            body: saved.msg || "Confira o status atualizado agora.",
+                            icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', // Ícone genérico de mapa
+                            vibrate: [200, 100, 200],
+                            tag: `promo-${place.id}`, // Substitui notificação anterior do mesmo local
+                            data: { url: window.location.href } // Dados para abrir o app ao clicar
+                        });
+                    });
+                }
             }
         }
     });
@@ -106,13 +122,10 @@ function syncData() {
         renderMarkers(currentFilter);
         console.log("🗺️ Mapa atualizado com novos dados!");
     }
+
+    // Após a primeira execução, libera as notificações para futuras mudanças
+    isFirstSync = false;
 }
-
-// 1. Executa imediatamente
-syncData();
-
-// 2. Executa a cada 2 segundos (Polling) - Garante que funcione sempre!
-setInterval(syncData, 2000);
 
 // Função para gerar ícones dinâmicos
 const createIcon = (color, status) => {
@@ -135,6 +148,30 @@ const createIcon = (color, status) => {
         iconSize: [24, 24],
         iconAnchor: [12, 24] // O ponto de ancoragem é a ponta de baixo do triângulo
     });
+};
+
+// --- FUNÇÃO DE PROMOÇÃO (CLIQUE) ---
+// Torna a função global para ser acessada pelo HTML do popup
+window.showPromo = (id) => {
+    console.log(`📢 Solicitando promoção para o ID: ${id}`);
+    
+    // 1. Busca diretamente do LocalStorage para garantir o dado mais recente
+    const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
+    // Usa '==' para garantir que encontre mesmo se id for string "1" e mock for numero 1
+    const place = mockEstablishments.find(p => p.id == id);
+    
+    if (!place) return; // Segurança caso o ID não exista
+
+    // 2. Prioridade: Mensagem do Admin > Mensagem do Mock
+    let currentMsg = (db[id] && db[id].msg) ? db[id].msg : place.msg;
+
+    // 3. Fallback: Se a mensagem estiver vazia, mostra um texto padrão
+    if (!currentMsg || currentMsg.trim() === "") {
+        currentMsg = "Nenhuma promoção ativa no momento.";
+    }
+
+    // 4. Exibe a notificação
+    showToast(`📢 <strong>${place.name}</strong><br>${currentMsg}`);
 };
 
 // --- LÓGICA DE RENDERIZAÇÃO E FILTROS ---
@@ -197,9 +234,9 @@ function renderMarkers(filterType) {
             .bindPopup(`
                 <div class="popup-card">
                     <div class="popup-header">${place.name}</div>
-                    <div class="popup-body">${place.msg}</div>
                     <div class="popup-body" style="padding-top:0;">
                         ${distanceHtml}
+                        <button onclick="window.showPromo(${place.id})" class="popup-btn promo-btn">🎉 Ver Promoções</button>
                         <a href="${googleMapsUrl}" target="_blank" class="popup-btn">🚗 Como Chegar</a>
                     </div>
                 </div>
@@ -210,6 +247,12 @@ function renderMarkers(filterType) {
 // Renderização inicial
 renderMarkers('all');
 console.log("DIVE 2.0: Correção de Erros DOM (v11).");
+
+// 1. Executa imediatamente a sincronização (agora que o mapa e markersLayer existem)
+syncData();
+
+// 2. Executa a cada 2 segundos (Polling) - Garante que funcione sempre!
+setInterval(syncData, 2000);
 
 // Event Listeners para os botões de filtro
 document.querySelectorAll('.filter-btn').forEach(btn => {

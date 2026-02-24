@@ -157,6 +157,14 @@ body, html {
     font-weight: bold;
 }
 
+/* Botão de Promoções (Destaque) */
+.promo-btn {
+    background-color: #8e44ad; /* Roxo */
+    border: none;
+    width: 100%; /* Ocupa largura total */
+    cursor: pointer;
+}
+
 /* Ajuste do botão de fechar para ficar branco sobre o header escuro */
 .leaflet-container a.leaflet-popup-close-button {
     color: white;
@@ -274,6 +282,12 @@ body.dark-mode .popup-body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+}
+
+/* Permite quebra de linha na mensagem da promoção */
+.toast span {
+    display: block;
+    line-height: 1.4;
 }
 
 /* --- RESPONSIVIDADE MOBILE (Telas menores que 600px) --- */
