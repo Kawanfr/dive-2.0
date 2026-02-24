@@ -3,6 +3,7 @@ const form = document.getElementById('business-form');
 const placeSelect = document.getElementById('place-select');
 
 // --- DADOS DOS ESTABELECIMENTOS (Cópia do app.js para simulação) ---
+// ⚠️ ATENÇÃO: Se adicionar um local no app.js, adicione aqui também!
 const establishments = [
     { id: 1, name: "Assai Atacadista (João Dias)" },
     { id: 2, name: "Carrefour Hipermercado (João Dias)" },

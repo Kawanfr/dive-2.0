@@ -298,6 +298,13 @@ const radiusFilter = document.getElementById('radius-filter');
 if (radiusFilter) {
     radiusFilter.addEventListener('change', (e) => {
         const value = e.target.value;
+        
+        // UX: Se o usuário tentar filtrar por raio sem GPS, avisa e reseta
+        if (value !== 'all' && !currentUserPosition) {
+            alert("⚠️ Aguardando sua localização para filtrar por distância.\nVerifique se o GPS está ativo.");
+            // Não impede o filtro, mas o usuário saberá por que não mudou nada
+        }
+
         currentRadius = value === 'all' ? Infinity : parseInt(value);
         renderMarkers(currentFilter); // Re-renderiza com o novo raio
     });
