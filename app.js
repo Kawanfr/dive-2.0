@@ -547,4 +547,13 @@ if ('serviceWorker' in navigator) {
                 console.error('Erro ao registrar o Service Worker:', error);
             });
     });
+
+    // --- AUTO-UPDATE (Limpa Cache) ---
+    // Detecta quando uma nova versão do SW assume o controle e recarrega a página
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+    });
 }
