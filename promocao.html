@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scrollable">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device=width, initial=scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2c3e50">
+    <title>Ofertas do Dia - DIVE</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="scrollable">
+
+    <!-- Botão de Voltar Flutuante -->
+    <a href="index.html" class="back-btn-float">⬅ Voltar ao Mapa</a>
+
+    <div class="promo-page-container">
+        <!-- Cabeçalho com Logo e Status -->
+        <div class="promo-header">
+            <div class="promo-logo-wrapper">
+                <img id="promo-logo" src="" alt="Logo do Estabelecimento">
+            </div>
+            <div class="hours-container">
+                <span id="promo-open-status" class="open-status"></span>
+                <div id="promo-hours" class="promo-hours"></div>
+            </div>
+            <h1 id="promo-title">Carregando...</h1>
+            <div id="promo-status-badge" class="status-badge">...</div>
+        </div>
+
+        <!-- Conteúdo da Promoção -->
+        <div class="promo-content">
+            <div class="promo-card">
+                <h2>📢 Destaque de Agora</h2>
+                <p id="promo-msg" class="highlight-text">Nenhuma promoção ativa no momento.</p>
+                <div class="promo-footer">
+                    <small>Atualizado recentemente</small>
+                </div>
+            </div>
+
+            <!-- Botões de Ação -->
+            <div class="action-buttons">
+                <a id="btn-maps" href="#" target="_blank" class="primary-btn">🚗 Como Chegar</a>
+                <button onclick="sharePromo()" class="secondary-btn">📲 Compartilhar Oferta</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="data.js"></script>
+    <script>
+        // Lógica para carregar os dados da página
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        
+        // 1. Busca dados estáticos (data.js)
+        const staticData = typeof sharedEstablishments !== 'undefined' 
+            ? sharedEstablishments.find(p => p.id == id) 
+            : null;
+
+        // 2. Busca dados dinâmicos (localStorage)
+        const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
+        const dynamicData = db[id] || {};
+
+        if (staticData) {
+            // Preenche a UI
+            document.getElementById('promo-title').innerText = staticData.name;
+            document.getElementById('promo-logo').src = staticData.icon || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
+            
+            // Preenche o Horário
+            if (staticData.hours) document.getElementById('promo-hours').innerText = staticData.hours;
+
+            // --- Lógica de Aberto/Fechado ---
+            if (staticData.schedule) {
+                const now = new Date();
+                const day = now.getDay(); // 0 = Domingo, 1-6 = Seg-Sáb
+                const hour = now.getHours();
+                let isOpen = false;
+                let schedule = null;
+
+                // Define qual horário usar
+                if (staticData.schedule.all) {
+                    schedule = staticData.schedule.all;
+                } else {
+                    schedule = (day === 0) ? staticData.schedule.sun : staticData.schedule.week;
+                }
+
+                // Verifica se está dentro do horário
+                if (schedule && hour >= schedule[0] && hour < schedule[1]) {
+                    isOpen = true;
+                }
+
+                const statusSpan = document.getElementById('promo-open-status');
+                if (isOpen) {
+                    statusSpan.innerHTML = '<span class="badge-open">Aberto Agora</span>';
+                } else {
+                    statusSpan.innerHTML = '<span class="badge-closed">Fechado</span>';
+                }
+            }
+            
+            // Define Status (Prioridade: Dinâmico > Estático)
+            const currentStatus = dynamicData.status || staticData.status;
+            const statusBadge = document.getElementById('promo-status-badge');
+            
+            if (currentStatus === 'fire') {
+                statusBadge.innerText = "🔥 Muito Movimentado (Promoções Ativas)";
+                statusBadge.style.backgroundColor = "#e74c3c";
+            } else if (currentStatus === 'chill') {
+                statusBadge.innerText = "🧊 Tranquilo (Poucas filas)";
+                statusBadge.style.backgroundColor = "#3498db";
+            } else {
+                statusBadge.innerText = "🎤 Ao Vivo / Evento";
+                statusBadge.style.backgroundColor = "#f1c40f";
+                statusBadge.style.color = "#333";
+            }
+
+            // Define Mensagem
+            const msg = dynamicData.msg || staticData.msg;
+            if (msg) document.getElementById('promo-msg').innerHTML = msg;
+
+            // Link do Maps
+            document.getElementById('btn-maps').href = `https://www.google.com/maps/dir/?api=1&destination=${staticData.coords[0]},${staticData.coords[1]}`;
+        } else {
+            document.body.innerHTML = "<h1 style='color:white; text-align:center; margin-top:50px;'>Estabelecimento não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
+        }
+
+        function sharePromo() {
+            const text = `Confira as ofertas de *${staticData.name}* no DIVE app! \n\n${document.getElementById('promo-msg').innerText}`;
+            if (navigator.share) navigator.share({ title: 'DIVE Promo', text: text, url: window.location.href });
+            else alert("Copie o link para compartilhar!");
+        }
+
+        // --- EFEITO DE CONFETE ---
+        function startConfetti() {
+            const colors = ['#e74c3c', '#3498db', '#f1c40f', '#2ecc71', '#9b59b6'];
+            
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                // Propriedades Aleatórias
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's'; // Entre 2s e 4s
+                confetti.style.opacity = Math.random();
+                
+                document.body.appendChild(confetti);
+
+                // Remove do DOM após a animação para não pesar
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        // Inicia a festa ao carregar
+        startConfetti();
+    </script>
+</body>
+</html>

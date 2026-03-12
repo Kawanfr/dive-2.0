@@ -9,6 +9,13 @@ body, html {
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Permite rolagem em páginas de conteúdo (Promoção, Cadastro) */
+body.scrollable, html.scrollable {
+    overflow-y: auto !important; /* Força a barra de rolagem vertical */
+    overflow-x: hidden;
+    height: auto !important; /* Permite que o corpo cresça com o conteúdo */
+}
+
 /* O mapa deve ocupar tudo */
 #map {
     height: 100%;
@@ -218,6 +225,31 @@ body, html {
     transform-origin: 50% 0%; /* Garante que o triângulo cresça a partir do topo */
 }
 
+/* --- Novo Estilo: Pin com Logo --- */
+.marker-pin {
+    width: 40px; 
+    height: 40px;
+    border-radius: 50% 50% 50% 0; /* Formato de gota */
+    transform: rotate(-45deg); /* Gira para apontar para baixo */
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* A cor de fundo virá inline do JS */
+}
+
+.marker-pin img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: white; /* Fundo branco para o logo destacar */
+    padding: 2px;
+    transform: rotate(45deg); /* Des-rotaciona a imagem para ficar reta */
+    object-fit: contain;
+    position: relative; /* Garante que fique acima do fundo */
+    z-index: 2;
+}
+
 /* --- Efeito de Onda (Ripple) --- */
 
 @keyframes ripple {
@@ -250,6 +282,165 @@ body.dark-mode #search-input {
     background-color: #2c2c2c;
     color: white;
     border-color: #444;
+}
+
+/* --- PÁGINA DE PROMOÇÃO (PERFIL) --- */
+.promo-page-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+    background-color: #f4f6f7; /* Fundo leve */
+    padding-bottom: 120px; /* Aumentado para garantir que o texto final não fique atrás dos botões */
+}
+
+body.dark-mode .promo-page-container {
+    background-color: #121212;
+}
+
+.back-btn-float {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 14px;
+    backdrop-filter: blur(5px);
+}
+
+.promo-header {
+    text-align: center;
+    margin-top: 40px;
+    margin-bottom: 30px;
+}
+
+.promo-logo-wrapper {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 4px solid white;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: white;
+}
+
+.promo-logo-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.hours-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+}
+
+.badge-open, .badge-closed {
+    font-size: 12px;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-open {
+    background-color: #e8f5e9;
+    color: #27ae60;
+    border: 1px solid #27ae60;
+}
+
+.badge-closed {
+    background-color: #ffebee;
+    color: #c0392b;
+    border: 1px solid #c0392b;
+}
+
+.promo-hours {
+    font-size: 13px;
+    color: #666;
+    margin-top: 8px;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 15px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+.promo-card {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+body.dark-mode .promo-card {
+    background: #1e1e1e;
+    color: #f0f0f0;
+}
+
+/* --- BOTÕES DE AÇÃO (FOOTER FIXO) --- */
+.action-buttons {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    padding: 15px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+    display: flex;
+    gap: 10px;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+body.dark-mode .action-buttons {
+    background-color: #1e1e1e;
+    border-top: 1px solid #333;
+}
+
+.action-buttons .primary-btn, 
+.action-buttons .secondary-btn {
+    margin-top: 0;
+    flex: 1; /* Botões dividem o espaço igualmente */
+}
+
+body.dark-mode .promo-hours {
+    color: #aaa;
+}
+
+/* --- ANIMAÇÃO DE CONFETE --- */
+.confetti {
+    position: fixed;
+    top: -20px;
+    z-index: 9999;
+    width: 10px;
+    height: 10px;
+    pointer-events: none; /* O clique passa através do confete */
+    animation: fall linear forwards;
+}
+
+@keyframes fall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
 }
 
 body.dark-mode #radius-filter {

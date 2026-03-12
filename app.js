@@ -36,48 +36,9 @@ L.tileLayer(tileUrl, {
 }).addTo(map);
 
 // --- DADOS SIMULADOS (MOCK DATA) ---
-const mockEstablishments = [
-    {
-        id: 1,
-        name: "Assai Atacadista (João Dias)",
-        coords: [-23.646234, -46.729094],
-        status: "fire",
-        msg: "🛒 Supermercado completo. Perfeito para atacado e varejo",
-        color: "red"
-    },
-    {
-        id: 2,
-        name: "Carrefour Hipermercado (João Dias)",
-        coords: [-23.642270, -46.734588],
-        status: "chill",
-        msg: "🧊 Mercado rápido para compras do dia a dia.",
-        color: "#3498db"
-    },
-    {
-        id: 3,
-        name: "Akki Atacadista João Dias",
-        coords: [-23.642038, -46.738812],
-        status: "live",
-        msg: "Perfeito para quem busca variedade e bons preços. Sempre movimentado!",
-        color: "#f1c40f"
-    },
-    {
-        id: 4,
-        name: "Ayumi Supermercado",
-        coords: [-23.649516, -46.733178],
-        status: "fire",
-        msg: "🔥 Variedade e preços competitivos.",
-        color: "red"
-    },
-    {
-        id: 5,
-        name: "Atacadão",
-        coords: [-23.668816, -46.736381],
-        status: "fire",
-        msg: "Atacado e varejo com ótimos preços. Sempre cheio!",
-        color: "#3498db"
-    }
-];
+// Usa os dados carregados do arquivo data.js
+// Se sharedEstablishments não existir (erro de load), usa array vazio para não quebrar
+const mockEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
 
 // --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
 // Função que sincroniza os dados a cada X segundos
@@ -132,7 +93,7 @@ function syncData() {
 }
 
 // Função para gerar ícones dinâmicos
-const createIcon = (color, status) => {
+const createIcon = (color, status, iconUrl) => {
     // Define a animação baseada no status
     let animationClass = '';
     let rippleHtml = '';
@@ -143,6 +104,21 @@ const createIcon = (color, status) => {
         rippleHtml = `<div class="ripple" style="background-color: ${color}"></div>`;
     } else {
         animationClass = 'anim-float'; // Tranquilo = Flutua
+    }
+
+    // Se tiver ícone (logo), cria um pin personalizado
+    if (iconUrl) {
+        return L.divIcon({
+            className: 'custom-div-icon',
+            html: `
+                ${rippleHtml}
+                <div class="${animationClass} marker-pin" style="background-color: ${color};">
+                    <img src="${iconUrl}" alt="Logo" />
+                </div>
+            `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 42] // A ponta do pin fica na coordenada exata
+        });
     }
 
     return L.divIcon({
@@ -235,7 +211,7 @@ function renderMarkers(filterType) {
         const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords[0]},${place.coords[1]}`;
 
         L.marker(place.coords, {
-            icon: createIcon(place.color, place.status),
+            icon: createIcon(place.color, place.status, place.icon),
             title: place.name, // Tooltip nativo ao passar o mouse
             alt: `Marcador no mapa: ${place.name}` // Acessibilidade para leitores de tela
         })
@@ -245,7 +221,7 @@ function renderMarkers(filterType) {
                     <div class="popup-header">${place.name}</div>
                     <div class="popup-body" style="padding-top:0;">
                         ${distanceHtml}
-                        <button onclick="window.showPromo(${place.id})" class="popup-btn promo-btn">🎉 Ver Promoções</button>
+                        <a href="promocao.html?id=${place.id}" class="popup-btn promo-btn">🎉 Ver Ofertas</a>
                         <a href="${googleMapsUrl}" target="_blank" class="popup-btn">🚗 Como Chegar</a>
                     </div>
                 </div>
@@ -255,13 +231,22 @@ function renderMarkers(filterType) {
 
 // Renderização inicial
 renderMarkers('all');
-console.log("DIVE 2.0: Correção de Erros DOM (v11).");
+console.log("DIVE 2.0: Sistema Iniciado (v43 RC).");
 
 // 1. Executa imediatamente a sincronização (agora que o mapa e markersLayer existem)
 syncData();
 
-// 2. Executa a cada 2 segundos (Polling) - Garante que funcione sempre!
-setInterval(syncData, 2000);
+// 2. Listener de Eventos de Storage (Melhor performance)
+// Dispara instantaneamente quando o admin.js salva dados em outra aba
+window.addEventListener('storage', (event) => {
+    if (event.key === 'dive-storage') {
+        syncData();
+    }
+});
+
+// 3. Polling de backup (aumentado para 10s para economizar bateria)
+// Útil caso o navegador suspenda eventos de fundo ou para garantir consistência
+setInterval(syncData, 10000);
 
 // Event Listeners para os botões de filtro
 document.querySelectorAll('.filter-btn').forEach(btn => {

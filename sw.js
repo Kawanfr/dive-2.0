@@ -1,12 +1,17 @@
-const CACHE_NAME = 'dive-v24';
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'dive-v43';
+const APP_SHELL = [
     './',
     './index.html',
     './cadastro.html',
+    './promocao.html',
     './style.css',
     './app.js',
     './admin.js',
-    './manifest.json',
+    './data.js',
+    './manifest.json'
+];
+
+const EXTERNAL_LIBS = [
     'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
     'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css',
     'https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css',
@@ -18,11 +23,19 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', (event) => {
     self.skipWaiting(); // Força o SW a ativar imediatamente, sem esperar
     event.waitUntil(
-        caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('Cache aberto');
-                return cache.addAll(ASSETS_TO_CACHE);
-            })
+        caches.open(CACHE_NAME).then(async (cache) => {
+            console.log('Cache aberto: ' + CACHE_NAME);
+            
+            // 1. Arquivos locais (Críticos) - Se falhar aqui, cancela a instalação (correto)
+            await cache.addAll(APP_SHELL);
+            
+            // 2. Bibliotecas externas - Tenta cachear, mas NÃO quebra o app se falhar (ex: unpkg fora do ar)
+            try {
+                await cache.addAll(EXTERNAL_LIBS);
+            } catch (error) {
+                console.warn('Aviso: Algumas libs externas não puderam ser cacheadas na instalação.', error);
+            }
+        })
     );
 });
 

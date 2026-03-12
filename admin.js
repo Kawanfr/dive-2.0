@@ -3,14 +3,8 @@ const form = document.getElementById('business-form');
 const placeSelect = document.getElementById('place-select');
 
 // --- DADOS DOS ESTABELECIMENTOS (Cópia do app.js para simulação) ---
-// ⚠️ ATENÇÃO: Se adicionar um local no app.js, adicione aqui também!
-const establishments = [
-    { id: 1, name: "Assai Atacadista (João Dias)" },
-    { id: 2, name: "Carrefour Hipermercado (João Dias)" },
-    { id: 3, name: "Akki Atacadista João Dias" },
-    { id: 4, name: "Ayumi Supermercado" },
-    { id: 5, name: "Atacadão" }
-];
+// Usa os dados carregados do arquivo data.js
+const establishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
 
 // 1. Preencher o Dropdown
 establishments.forEach(place => {
