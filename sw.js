@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-v45';
+const CACHE_NAME = 'dive-v49';
 const APP_SHELL = [
     './',
     './index.html',
@@ -42,11 +42,22 @@ self.addEventListener('install', (event) => {
 // Interceptação de requisições (Offline First)
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request)
-            .then((response) => {
-                // Retorna do cache se encontrar, senão busca na rede
-                return response || fetch(event.request);
-            })
+        caches.match(event.request).then((cachedResponse) => {
+            // Estratégia: Stale-While-Revalidate
+            // Faz a requisição na rede em segundo plano para atualizar o cache
+            const fetchPromise = fetch(event.request).then((networkResponse) => {
+                caches.open(CACHE_NAME).then((cache) => {
+                    // Só faz cache de requisições bem-sucedidas com esquema http/https
+                    if (event.request.url.startsWith('http')) {
+                        cache.put(event.request, networkResponse.clone());
+                    }
+                });
+                return networkResponse;
+            }).catch(() => cachedResponse); // Se a rede falhar, cai silenciosamente
+            
+            // Retorna imediatamente o cache (se existir), ou aguarda a rede
+            return cachedResponse || fetchPromise;
+        })
     );
 });
 

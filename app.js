@@ -10,35 +10,58 @@ const map = L.map('map', {
 
 // --- CONFIGURAÇÃO DE TEMA (DARK/LIGHT) ---
 const currentHour = new Date().getHours();
-const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-const isNight = prefersDark || (currentHour >= 18 || currentHour < 6); // Preferência do sistema OU horário
+const mediaQueryDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+let isNight = (mediaQueryDark && mediaQueryDark.matches) || (currentHour >= 18 || currentHour < 6); // Preferência do sistema OU horário
 
 let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 let attribution = '&copy; OpenStreetMap contributors';
 let tileClassName = '';
 
-if (isNight) {
-    // Ativa classe no corpo para mudar a UI (botões, popups)
-    document.body.classList.add('dark-mode');
-    
-    // Muda a cor da barra de status do navegador (mobile)
-    document.querySelector('meta[name="theme-color"]').setAttribute('content', '#121212');
-
-    // Aplica filtro CSS para inverter cores (Texto preto vira branco)
-    tileClassName = 'dark-mode-tiles';
+function applyTheme() {
+    const themeMeta = document.querySelector('meta[name="theme-color"]') || document.createElement('meta');
+    themeMeta.name = "theme-color";
+    if (isNight) {
+        document.body.classList.add('dark-mode');
+        themeMeta.setAttribute('content', '#121212');
+        tileClassName = 'dark-mode-tiles';
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeMeta.setAttribute('content', '#ffffff');
+        tileClassName = '';
+    }
+    if (!document.querySelector('meta[name="theme-color"]')) {
+        document.head.appendChild(themeMeta);
+    }
 }
 
+applyTheme();
+
 // Adiciona a camada de tiles correta
-L.tileLayer(tileUrl, {
+const tileLayer = L.tileLayer(tileUrl, {
     maxZoom: 19,
     attribution: attribution,
     className: tileClassName
 }).addTo(map);
 
+// Reage automaticamente se o usuário mudar o tema do celular com o app aberto
+if (mediaQueryDark) {
+    mediaQueryDark.addEventListener('change', (e) => {
+        isNight = e.matches || (new Date().getHours() >= 18 || new Date().getHours() < 6);
+        applyTheme();
+        
+        // Re-aplica a camada no Leaflet sem precisar recarregar a página
+        map.removeLayer(tileLayer);
+        tileLayer.options.className = tileClassName;
+        tileLayer.addTo(map);
+    });
+}
+
 // --- DADOS SIMULADOS (MOCK DATA) ---
 // Usa os dados carregados do arquivo data.js
 // Se sharedEstablishments não existir (erro de load), usa array vazio para não quebrar
-const mockEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
+const baseEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
+const customEstablishments = JSON.parse(localStorage.getItem('dive-custom-places') || '[]');
+const mockEstablishments = [...baseEstablishments, ...customEstablishments];
 
 // --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
 // Função que sincroniza os dados a cada X segundos
@@ -218,7 +241,15 @@ function renderMarkers(filterType) {
             .addTo(markersLayer) // Adiciona ao grupo, não direto ao mapa
             .bindPopup(`
                 <div class="popup-card">
-                    <div class="popup-header">${place.name}</div>
+                    <div class="popup-header">
+                        ${place.name}
+                        ${place.website ? `
+                            <a href="${place.website}" target="_blank" class="popup-website-link" title="Acessar site do local">🌐</a>
+                            <a href="${place.website}" target="_blank" class="popup-website-preview" title="Prévia do site">
+                                <img src="https://image.thum.io/get/width/300/crop/300/${place.website}" loading="lazy" alt="Prévia do site">
+                            </a>
+                        ` : ''}
+                    </div>
                     <div class="popup-body" style="padding-top:0;">
                         ${distanceHtml}
                         <a href="promocao.html?id=${place.id}" class="popup-btn promo-btn">🎉 Ver Ofertas</a>
@@ -242,11 +273,40 @@ window.addEventListener('storage', (event) => {
     if (event.key === 'dive-storage') {
         syncData();
     }
+    if (event.key === 'dive-custom-places') {
+        // Puxa a nova lista da IA
+        const newCustomPlaces = JSON.parse(event.newValue || '[]');
+        
+        // Limpa a lista atual e junta os originais com os novos locais da IA
+        mockEstablishments.length = 0; 
+        mockEstablishments.push(...baseEstablishments, ...newCustomPlaces);
+        
+        // Redesenha os pinos no mapa
+        renderMarkers(currentFilter);
+        
+        // Avisa visualmente na tela do mapa
+        showToast("🤖 Novo local adicionado com sucesso no mapa!");
+        
+        // Faz o mapa "voar" até o novo pino automaticamente em tempo real
+        if (newCustomPlaces.length > 0) {
+            const lastPlace = newCustomPlaces[newCustomPlaces.length - 1];
+            map.flyTo(lastPlace.coords, 16);
+            setTimeout(() => focusOnPlace(lastPlace), 800); // Abre o card sozinho
+        }
+    }
 });
 
 // 3. Polling de backup (aumentado para 10s para economizar bateria)
 // Útil caso o navegador suspenda eventos de fundo ou para garantir consistência
 setInterval(syncData, 10000);
+
+// --- FOCAR NO ÚLTIMO LOCAL DA IA AO ABRIR O MAPA ---
+window.addEventListener('DOMContentLoaded', () => {
+    if (customEstablishments.length > 0) {
+        const lastPlace = customEstablishments[customEstablishments.length - 1];
+        map.flyTo(lastPlace.coords, 15); // Move a câmera para o local gerado
+    }
+});
 
 // Event Listeners para os botões de filtro
 document.querySelectorAll('.filter-btn').forEach(btn => {
@@ -453,6 +513,14 @@ if ('geolocation' in navigator) {
             // Verifica se tem algo perto a cada atualização de GPS
             checkProximity(currentUserPosition);
 
+            // --- ATUALIZA DISTÂNCIAS NOS POPUPS ABERTOS DINAMICAMENTE ---
+            document.querySelectorAll('.distance-display').forEach(el => {
+                const lat = parseFloat(el.getAttribute('data-lat'));
+                const lng = parseFloat(el.getAttribute('data-lng'));
+                const dist = map.distance(currentUserPosition, [lat, lng]);
+                el.innerHTML = `📏 ${Math.round(dist)}m de você`;
+            });
+
             // Atualiza ou cria o marcador do usuário
             if (!userMarker) {
                 // Ícone diferente para o usuário (Bolinha azul estilo Google Maps)
@@ -485,14 +553,14 @@ if ('geolocation' in navigator) {
             if (error.code === 1) {
                 alert("Permissão de GPS negada. Por favor, permita o acesso nas configurações do navegador.");
             } else {
-                // Não spamar alerta em erros de timeout, apenas logar
-                console.warn('Tentando reconectar GPS...');
+                // Erros 2 (Posição Indisponível) e 3 (Timeout). Registra apenas se não for timeout repetitivo
+                if (error.code !== 3) console.warn('Aviso de Geolocalização:', error.message);
             }
         },
         {
-            enableHighAccuracy: true, // VOLTANDO: True é necessário para muitos Androids
-            maximumAge: 0, // Não aceita cache velho, queremos a posição real agora
-            timeout: 20000 // 20 segundos para tentar achar
+            enableHighAccuracy: true,
+            maximumAge: 5000, // Aceita cache de até 5 segundos (Economiza MUITA bateria)
+            timeout: 15000 // 15 segundos antes de desistir e tentar de novo
         }
     );
 }

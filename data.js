@@ -9,7 +9,8 @@ const sharedEstablishments = [
         color: "red",
         icon: "https://www.google.com/s2/favicons?domain=assai.com.br&sz=128",
         hours: "🕒 Seg-Sáb: 07:00 - 22:00 | Dom: 08:00 - 18:00",
-        schedule: { week: [7, 22], sun: [8, 18] }
+        schedule: { week: [7, 22], sun: [8, 18] },
+        website: "https://www.assai.com.br"
     },
     {
         id: 2,
@@ -20,7 +21,8 @@ const sharedEstablishments = [
         color: "red",
         icon: "https://www.google.com/s2/favicons?domain=carrefour.com.br&sz=128",
         hours: "🕒 Aberto todos os dias: 06:00 - 23:00",
-        schedule: { all: [6, 23] }
+        schedule: { all: [6, 23] },
+        website: "https://www.carrefour.com.br"
     },
     {
         id: 3,
@@ -31,7 +33,8 @@ const sharedEstablishments = [
         color: "red",
         icon: "https://www.google.com/s2/favicons?domain=akkiatacadista.com.br&sz=128",
         hours: "🕒 Seg-Sáb: 07:00 - 22:00 | Dom: 07:00 - 20:00",
-        schedule: { week: [7, 22], sun: [7, 20] }
+        schedule: { week: [7, 22], sun: [7, 20] },
+        website: "https://www.akkiatacadista.com.br"
     },
     {
         id: 4,
@@ -42,7 +45,8 @@ const sharedEstablishments = [
         color: "red",
         icon: "https://www.google.com/s2/favicons?domain=ayumisupermercados.com.br&sz=128",
         hours: "🕒 Seg-Sáb: 08:00 - 21:00 | Dom: 08:00 - 14:00",
-        schedule: { week: [8, 21], sun: [8, 14] }
+        schedule: { week: [8, 21], sun: [8, 14] },
+        website: "https://ayumisupermercados.com.br"
     },
     {
         id: 5,
@@ -53,6 +57,7 @@ const sharedEstablishments = [
         color: "red",
         icon: "https://www.google.com/s2/favicons?domain=atacadao.com.br&sz=128",
         hours: "🕒 Seg-Sáb: 07:00 - 22:00 | Dom: 08:00 - 18:00",
-        schedule: { week: [7, 22], sun: [8, 18] }
+        schedule: { week: [7, 22], sun: [8, 18] },
+        website: "https://www.atacadao.com.br"
     }
 ];

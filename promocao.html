@@ -11,6 +11,14 @@
 
     <!-- Botão de Voltar Flutuante -->
     <a href="index.html" class="back-btn-float">⬅ Voltar ao Mapa</a>
+    
+    <!-- Botão de Site Flutuante -->
+    <a id="promo-website-btn" href="#" target="_blank" class="website-btn-float hidden">🌐 Site</a>
+    
+    <!-- Prévia de Site Flutuante -->
+    <a id="promo-website-preview" href="#" target="_blank" class="website-preview-float hidden">
+        <img id="promo-website-img" src="" alt="Prévia do site">
+    </a>
 
     <div class="promo-page-container">
         <!-- Cabeçalho com Logo e Status -->
@@ -117,6 +125,19 @@
 
             // Link do Maps
             document.getElementById('btn-maps').href = `https://www.google.com/maps/dir/?api=1&destination=${staticData.coords[0]},${staticData.coords[1]}`;
+            
+            // Exibe o botão do Site caso o local possua um
+            if (staticData.website) {
+                const siteBtn = document.getElementById('promo-website-btn');
+                siteBtn.href = staticData.website;
+                siteBtn.classList.remove('hidden');
+
+                const previewBtn = document.getElementById('promo-website-preview');
+                const previewImg = document.getElementById('promo-website-img');
+                previewBtn.href = staticData.website;
+                previewImg.src = `https://image.thum.io/get/width/400/crop/400/${staticData.website}`;
+                previewBtn.classList.remove('hidden');
+            }
         } else {
             document.body.innerHTML = "<h1 style='color:white; text-align:center; margin-top:50px;'>Estabelecimento não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
         }
