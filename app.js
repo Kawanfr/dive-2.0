@@ -59,9 +59,7 @@ if (mediaQueryDark) {
 // --- DADOS SIMULADOS (MOCK DATA) ---
 // Usa os dados carregados do arquivo data.js
 // Se sharedEstablishments não existir (erro de load), usa array vazio para não quebrar
-const baseEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
-const customEstablishments = JSON.parse(localStorage.getItem('dive-custom-places') || '[]');
-const mockEstablishments = [...baseEstablishments, ...customEstablishments];
+const mockEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
 
 // --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
 // Função que sincroniza os dados a cada X segundos
@@ -273,40 +271,14 @@ window.addEventListener('storage', (event) => {
     if (event.key === 'dive-storage') {
         syncData();
     }
-    if (event.key === 'dive-custom-places') {
-        // Puxa a nova lista da IA
-        const newCustomPlaces = JSON.parse(event.newValue || '[]');
-        
-        // Limpa a lista atual e junta os originais com os novos locais da IA
-        mockEstablishments.length = 0; 
-        mockEstablishments.push(...baseEstablishments, ...newCustomPlaces);
-        
-        // Redesenha os pinos no mapa
-        renderMarkers(currentFilter);
-        
-        // Avisa visualmente na tela do mapa
-        showToast("🤖 Novo local adicionado com sucesso no mapa!");
-        
-        // Faz o mapa "voar" até o novo pino automaticamente em tempo real
-        if (newCustomPlaces.length > 0) {
-            const lastPlace = newCustomPlaces[newCustomPlaces.length - 1];
-            map.flyTo(lastPlace.coords, 16);
-            setTimeout(() => focusOnPlace(lastPlace), 800); // Abre o card sozinho
-        }
-    }
+
 });
 
 // 3. Polling de backup (aumentado para 10s para economizar bateria)
 // Útil caso o navegador suspenda eventos de fundo ou para garantir consistência
 setInterval(syncData, 10000);
 
-// --- FOCAR NO ÚLTIMO LOCAL DA IA AO ABRIR O MAPA ---
-window.addEventListener('DOMContentLoaded', () => {
-    if (customEstablishments.length > 0) {
-        const lastPlace = customEstablishments[customEstablishments.length - 1];
-        map.flyTo(lastPlace.coords, 15); // Move a câmera para o local gerado
-    }
-});
+
 
 // Event Listeners para os botões de filtro
 document.querySelectorAll('.filter-btn').forEach(btn => {
