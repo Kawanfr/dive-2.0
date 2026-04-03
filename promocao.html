@@ -15,10 +15,7 @@
     <!-- Botão de Site Flutuante -->
     <a id="promo-website-btn" href="#" target="_blank" class="website-btn-float hidden">🌐 Site</a>
     
-    <!-- Prévia de Site Flutuante -->
-    <a id="promo-website-preview" href="#" target="_blank" class="website-preview-float hidden">
-        <img id="promo-website-img" src="" alt="Prévia do site">
-    </a>
+
 
     <div class="promo-page-container">
         <!-- Cabeçalho com Logo e Status -->
@@ -52,7 +49,7 @@
         </div>
     </div>
 
-    <script src="data.js"></script>
+
     <script type="module">
         import { db } from './firebase-config.js';
         import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
@@ -60,35 +57,29 @@
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
         
-        // 1. Busca dados estáticos (data.js) (será feito por Promise.all)
-        const staticData = window.sharedEstablishments 
-            ? window.sharedEstablishments.find(p => p.id == id) 
-            : null;
-
-        // 2. Busca dados dinâmicos do Firebase
-        let dynamicData = {};
+        let establishmentData = null;
         if (id) {
             try {
                 const docRef = doc(db, "establishments", String(id));
                 const docSnap = await getDoc(docRef);
                 if (docSnap.exists()) {
-                    dynamicData = docSnap.data();
+                    establishmentData = docSnap.data();
                 }
             } catch (err) {
                 console.error("Erro importando Firebase:", err);
             }
         }
 
-        if (staticData) {
+        if (establishmentData) {
             // Preenche a UI
-            document.getElementById('promo-title').innerText = staticData.name;
-            document.getElementById('promo-logo').src = staticData.icon || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
+            document.getElementById('promo-title').innerText = establishmentData.name;
+            document.getElementById('promo-logo').src = establishmentData.icon || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
             
             // Preenche o Horário
-            if (staticData.hours) document.getElementById('promo-hours').innerText = staticData.hours;
+            if (establishmentData.hours) document.getElementById('promo-hours').innerText = establishmentData.hours;
 
             // --- Lógica de Aberto/Fechado ---
-            if (staticData.schedule) {
+            if (establishmentData.schedule) {
                 const now = new Date();
                 const day = now.getDay(); // 0 = Domingo, 1-6 = Seg-Sáb
                 const hour = now.getHours();
@@ -96,10 +87,10 @@
                 let schedule = null;
 
                 // Define qual horário usar
-                if (staticData.schedule.all) {
-                    schedule = staticData.schedule.all;
+                if (establishmentData.schedule.all) {
+                    schedule = establishmentData.schedule.all;
                 } else {
-                    schedule = (day === 0) ? staticData.schedule.sun : staticData.schedule.week;
+                    schedule = (day === 0) ? establishmentData.schedule.sun : establishmentData.schedule.week;
                 }
 
                 // Verifica se está dentro do horário
@@ -115,8 +106,8 @@
                 }
             }
             
-            // Define Status (Prioridade: Dinâmico > Estático)
-            const currentStatus = dynamicData.status || staticData.status;
+            // Define Status (Prioridade única)
+            const currentStatus = establishmentData.status;
             const statusBadge = document.getElementById('promo-status-badge');
             
             if (currentStatus === 'fire') {
@@ -132,30 +123,25 @@
             }
 
             // Define Mensagem
-            const msg = dynamicData.msg || staticData.msg;
+            const msg = establishmentData.msg;
             if (msg) document.getElementById('promo-msg').innerHTML = msg;
 
             // Link do Maps
-            document.getElementById('btn-maps').href = `https://www.google.com/maps/dir/?api=1&destination=${staticData.coords[0]},${staticData.coords[1]}`;
+            document.getElementById('btn-maps').href = `https://www.google.com/maps/dir/?api=1&destination=${establishmentData.coords[0]},${establishmentData.coords[1]}`;
             
             // Exibe o botão do Site caso o local possua um
-            if (staticData.website) {
+            if (establishmentData.website) {
                 const siteBtn = document.getElementById('promo-website-btn');
-                siteBtn.href = staticData.website;
+                siteBtn.href = establishmentData.website;
+                siteBtn.innerHTML = `🌐 ${establishmentData.name.split(' ')[0]}`;
                 siteBtn.classList.remove('hidden');
-
-                const previewBtn = document.getElementById('promo-website-preview');
-                const previewImg = document.getElementById('promo-website-img');
-                previewBtn.href = staticData.website;
-                previewImg.src = `https://image.thum.io/get/width/400/crop/400/${staticData.website}`;
-                previewBtn.classList.remove('hidden');
             }
         } else {
             document.body.innerHTML = "<h1 style='color:white; text-align:center; margin-top:50px;'>Estabelecimento não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
         }
 
         window.sharePromo = function() {
-            const text = `Confira as ofertas de *${staticData.name}* no DIVE app! \n\n${document.getElementById('promo-msg').innerText}`;
+            const text = `Confira as ofertas de *${establishmentData.name}* no DIVE app! \n\n${document.getElementById('promo-msg').innerText}`;
             if (navigator.share) navigator.share({ title: 'DIVE Promo', text: text, url: window.location.href });
             else alert("Copie o link para compartilhar!");
         }

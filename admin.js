@@ -1,20 +1,42 @@
 import { db } from './firebase-config.js';
-import { doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { doc, getDoc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
 // Referências aos elementos
 const form = document.getElementById('business-form');
 const placeSelect = document.getElementById('place-select');
 
-// Usa os dados carregados do array estático base (já puxados do global)
-const establishments = window.sharedEstablishments || [];
-
-// 1. Preencher o Dropdown
-establishments.forEach(place => {
-    const option = document.createElement('option');
-    option.value = place.id;
-    option.textContent = place.name;
-    placeSelect.appendChild(option);
-});
+// 1. Preencher o Dropdown dinamicamente via Nuvem
+async function populateDropdown() {
+    placeSelect.innerHTML = '<option value="" disabled selected>Carregando lojas da nuvem...</option>';
+    try {
+        const snapshot = await getDocs(collection(db, 'establishments'));
+        const establishments = [];
+        snapshot.forEach(docSnap => establishments.push(docSnap.data()));
+        
+        placeSelect.innerHTML = '';
+        if (establishments.length === 0) {
+            placeSelect.innerHTML = '<option value="" disabled selected>Nenhuma loja encontrada</option>';
+            return;
+        }
+        
+        // Ordena por nome
+        establishments.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
+        
+        establishments.forEach(place => {
+            const option = document.createElement('option');
+            option.value = place.id;
+            option.textContent = place.name;
+            placeSelect.appendChild(option);
+        });
+        
+        // Dispara o evento ao carregar
+        placeSelect.dispatchEvent(new Event('change'));
+    } catch(err) {
+        console.error("Erro ao carregar lojas:", err);
+        placeSelect.innerHTML = '<option value="" disabled selected>Erro de conexão</option>';
+    }
+}
+populateDropdown();
 
 // 2. Função para carregar dados salvos ao selecionar um local da Nuvem
 placeSelect.addEventListener('change', async () => {
@@ -48,8 +70,7 @@ placeSelect.addEventListener('change', async () => {
     }
 });
 
-// Dispara o evento ao carregar
-placeSelect.dispatchEvent(new Event('change'));
+
 
 // 3. Salvar Atualização na Nuvem
 form.addEventListener('submit', async (e) => {

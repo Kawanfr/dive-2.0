@@ -1,5 +1,9 @@
-// Banco de Dados Compartilhado (Single Source of Truth)
-window.sharedEstablishments = [
+import { db } from './firebase-config.js';
+import { collection, onSnapshot, doc, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+
+// O antigo data.js agora vive apenas AQUI para o SEED INICIAL, caso o banco esteja limpo. 
+// Depois disso, a NUVEM é a única fonte da verdade.
+const defaultPayload = [
     {
         id: 1,
         name: "Assai Atacadista (João Dias)",
@@ -61,3 +65,77 @@ window.sharedEstablishments = [
         website: "https://www.atacadao.com.br"
     }
 ];
+
+export let globalEstablishments = []; // Estado global do mapa
+let isFirstSync = true;
+
+// Preenche o banco se estiver vazio
+export async function initializeDB(onReady) {
+    try {
+        const querySnapshot = await getDocs(collection(db, "establishments"));
+        
+        let needsSeed = false;
+        if (querySnapshot.empty) {
+            needsSeed = true;
+        } else {
+            // Verifica se o banco atual está faltando os dados reais de coordenadas (legado)
+            const firstDoc = querySnapshot.docs[0].data();
+            if (!firstDoc.coords) {
+                needsSeed = true;
+            }
+        }
+
+        if (needsSeed) {
+            console.warn("Banco precisa do Seed Completo. Fazendo o upload dos dados mestres...");
+            
+            // Envia tudo pro Firestore
+            for (let place of defaultPayload) {
+                await setDoc(doc(db, "establishments", String(place.id)), place, { merge: true });
+            }
+            console.log("✅ Seed finalizado no Firestore.");
+        }
+    } catch(e) {
+        console.error("DB Error:", e);
+    } finally {
+        if(onReady) onReady();
+    }
+}
+
+// Mantém conexão permanente por WebSocket
+export function subscribeToEstablishments(onUpdated, onPushAlert) {
+    return onSnapshot(collection(db, "establishments"), (snapshot) => {
+        let hasStructuralChanges = false;
+        
+        snapshot.docChanges().forEach((change) => {
+            const data = change.doc.data();
+            
+            if (change.type === "added") {
+                globalEstablishments.push(data);
+                hasStructuralChanges = true;
+            }
+            if (change.type === "modified") {
+                const index = globalEstablishments.findIndex(p => String(p.id) === String(data.id));
+                if(index !== -1) globalEstablishments[index] = data;
+                else globalEstablishments.push(data);
+                
+                hasStructuralChanges = true;
+
+                // Emite alerta apenas se alterado remotamente (e não o primeiro load)
+                if (!isFirstSync && onPushAlert) {
+                    onPushAlert(data);
+                }
+            }
+            if (change.type === "removed") {
+                globalEstablishments = globalEstablishments.filter(p => String(p.id) !== String(data.id));
+                hasStructuralChanges = true;
+            }
+        });
+
+        // Diz à UI base para repintar
+        if (hasStructuralChanges && onUpdated) {
+            onUpdated(globalEstablishments);
+        }
+        
+        isFirstSync = false;
+    });
+}
