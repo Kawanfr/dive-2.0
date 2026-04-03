@@ -58,60 +58,78 @@ if (mediaQueryDark) {
 
 // --- DADOS SIMULADOS (MOCK DATA) ---
 // Usa os dados carregados do arquivo data.js
-// Se sharedEstablishments não existir (erro de load), usa array vazio para não quebrar
-const mockEstablishments = typeof sharedEstablishments !== 'undefined' ? sharedEstablishments : [];
+// Se window.sharedEstablishments não existir (erro de load), usa array vazio para não quebrar
+const mockEstablishments = window.sharedEstablishments || [];
 
-// --- INTEGRAÇÃO COM LOCALSTORAGE (ADMIN) ---
-// Função que sincroniza os dados a cada X segundos
-let isFirstSync = true; // Impede notificações massivas ao abrir o app
+import { db } from './firebase-config.js';
+import { collection, onSnapshot, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 
-function syncData() {
-    // Lê o "banco de dados" completo
-    const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
+let isFirstSync = true; 
+
+// --- SEED DO BANCO DE DADOS (OPCIONAL) ---
+async function initializeDB() {
+    try {
+        const testDoc = await getDoc(doc(db, "establishments", "1"));
+        if (!testDoc.exists()) {
+            console.log("Iniciando popular DB na nuvem...");
+            for (let place of mockEstablishments) {
+                await setDoc(doc(db, "establishments", String(place.id)), {
+                    id: place.id,
+                    status: place.status,
+                    msg: place.msg,
+                    color: place.color
+                }, { merge: true });
+            }
+            console.log("✅ Seed completo");
+        }
+    } catch(e) {
+        console.warn("Nuvem configurada, mas falha no Seed.", e);
+    }
+}
+initializeDB();
+
+// --- ESCUTANDO A NUVEM EM TEMPO REAL ---
+onSnapshot(collection(db, "establishments"), (snapshot) => {
     let hasChanges = false;
+    
+    snapshot.docChanges().forEach((change) => {
+        const data = change.doc.data();
+        
+        // Acha a loja no mapa local e atualiza os dados visuais
+        const place = mockEstablishments.find(p => String(p.id) === String(data.id));
+        if (place) {
+            const changed = place.status !== data.status || place.msg !== data.msg;
+            
+            place.status = data.status || place.status;
+            place.msg = data.msg || place.msg;
+            place.color = data.color || place.color;
+            
+            if (changed) hasChanges = true;
 
-    mockEstablishments.forEach(place => {
-        // Se existir dados salvos para este ID
-        if (db[place.id]) {
-            const saved = db[place.id];
-            // Verifica se algo mudou antes de atualizar (para não piscar o mapa à toa)
-            if (place.status !== saved.status || place.msg !== saved.msg) {
-                place.status = saved.status;
-                place.msg = saved.msg;
-                place.color = saved.color;
-                hasChanges = true;
-                console.log(`🔄 Sincronizando: ${place.name}`);
-
-                // DISPARA NOTIFICAÇÃO NA BARRA DE TAREFAS
-                // Só notifica se NÃO for a primeira carga (abertura do app) e se tiver permissão
-                if (!isFirstSync) {
-                    if (Notification.permission === 'granted') {
-                        navigator.serviceWorker.ready.then(registration => {
-                            registration.showNotification(`Nova Promoção em ${place.name}!`, {
-                                body: saved.msg || "Confira o status atualizado agora.",
-                                icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png', // Ícone genérico de mapa
-                                vibrate: [200, 100, 200],
-                                tag: `promo-${place.id}`, // Substitui notificação anterior do mesmo local
-                                data: { url: window.location.href } // Dados para abrir o app ao clicar
-                            });
+            // Diferencia notificações apenas se foi de fato modificado (e não o load inicial)
+            if (changed && change.type === "modified" && !isFirstSync) {
+                if (Notification.permission === 'granted') {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(`Nova Promoção em ${place.name}!`, {
+                            body: data.msg || "Confira o status atualizado agora.",
+                            icon: 'https://cdn-icons-png.flaticon.com/512/854/854878.png',
+                            vibrate: [200, 100, 200],
+                            tag: `promo-${place.id}`,
+                            data: { url: window.location.href }
                         });
-                    } else {
-                        console.warn(`⚠️ Notificação ignorada para ${place.name}. Motivo: Permissão negada ou padrão.`);
-                    }
+                    });
                 }
             }
         }
     });
 
-    // Se houve mudança, redesenha o mapa
     if (hasChanges && typeof renderMarkers === 'function') {
         renderMarkers(currentFilter);
-        console.log("🗺️ Mapa atualizado com novos dados!");
+        console.log("🗺️ Mapa atualizado com dados da nuvem!");
     }
-
-    // Após a primeira execução, libera as notificações para futuras mudanças
+    
     isFirstSync = false;
-}
+});
 
 // Função para gerar ícones dinâmicos
 const createIcon = (color, status, iconUrl) => {
@@ -156,27 +174,21 @@ const createIcon = (color, status, iconUrl) => {
 window.showPromo = (id) => {
     console.log(`📢 Solicitando promoção para o ID: ${id}`);
     
-    // 1. Busca diretamente do LocalStorage para garantir o dado mais recente
-    const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
-    // Usa '==' para garantir que encontre mesmo se id for string "1" e mock for numero 1
     const place = mockEstablishments.find(p => p.id == id);
 
-    // Tenta pedir permissão de notificação aqui também, caso o usuário não tenha dado antes
     if (Notification.permission === 'default') {
         Notification.requestPermission();
     }
     
-    if (!place) return; // Segurança caso o ID não exista
+    if (!place) return; 
 
-    // 2. Prioridade: Mensagem do Admin > Mensagem do Mock
-    let currentMsg = (db[id] && db[id].msg) ? db[id].msg : place.msg;
+    // O mockEstablishments já está atualizado via onSnapshot
+    let currentMsg = place.msg;
 
-    // 3. Fallback: Se a mensagem estiver vazia, mostra um texto padrão
     if (!currentMsg || currentMsg.trim() === "") {
         currentMsg = "Nenhuma promoção ativa no momento.";
     }
 
-    // 4. Exibe a notificação
     showToast(`📢 <strong>${place.name}</strong><br>${currentMsg}`);
 };
 
@@ -262,21 +274,7 @@ function renderMarkers(filterType) {
 renderMarkers('all');
 console.log("DIVE 2.0: Sistema Iniciado (v43 RC).");
 
-// 1. Executa imediatamente a sincronização (agora que o mapa e markersLayer existem)
-syncData();
-
-// 2. Listener de Eventos de Storage (Melhor performance)
-// Dispara instantaneamente quando o admin.js salva dados em outra aba
-window.addEventListener('storage', (event) => {
-    if (event.key === 'dive-storage') {
-        syncData();
-    }
-
-});
-
-// 3. Polling de backup (aumentado para 10s para economizar bateria)
-// Útil caso o navegador suspenda eventos de fundo ou para garantir consistência
-setInterval(syncData, 10000);
+// Sincronização agora operada integralmente pelo driver web socket da firebase!
 
 
 

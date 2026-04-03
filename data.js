@@ -1,5 +1,5 @@
 // Banco de Dados Compartilhado (Single Source of Truth)
-const sharedEstablishments = [
+window.sharedEstablishments = [
     {
         id: 1,
         name: "Assai Atacadista (João Dias)",

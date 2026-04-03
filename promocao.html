@@ -53,19 +53,31 @@
     </div>
 
     <script src="data.js"></script>
-    <script>
+    <script type="module">
+        import { db } from './firebase-config.js';
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
         // Lógica para carregar os dados da página
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
         
-        // 1. Busca dados estáticos (data.js)
-        const staticData = typeof sharedEstablishments !== 'undefined' 
-            ? sharedEstablishments.find(p => p.id == id) 
+        // 1. Busca dados estáticos (data.js) (será feito por Promise.all)
+        const staticData = window.sharedEstablishments 
+            ? window.sharedEstablishments.find(p => p.id == id) 
             : null;
 
-        // 2. Busca dados dinâmicos (localStorage)
-        const db = JSON.parse(localStorage.getItem('dive-storage') || '{}');
-        const dynamicData = db[id] || {};
+        // 2. Busca dados dinâmicos do Firebase
+        let dynamicData = {};
+        if (id) {
+            try {
+                const docRef = doc(db, "establishments", String(id));
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    dynamicData = docSnap.data();
+                }
+            } catch (err) {
+                console.error("Erro importando Firebase:", err);
+            }
+        }
 
         if (staticData) {
             // Preenche a UI
@@ -142,7 +154,7 @@
             document.body.innerHTML = "<h1 style='color:white; text-align:center; margin-top:50px;'>Estabelecimento não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
         }
 
-        function sharePromo() {
+        window.sharePromo = function() {
             const text = `Confira as ofertas de *${staticData.name}* no DIVE app! \n\n${document.getElementById('promo-msg').innerText}`;
             if (navigator.share) navigator.share({ title: 'DIVE Promo', text: text, url: window.location.href });
             else alert("Copie o link para compartilhar!");
