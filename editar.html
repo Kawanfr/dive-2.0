@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scrollable">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device=width, initial=scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2c3e50">
+    <title>DIVE Master - Editar Loja</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="scrollable">
+
+    <div class="master-nav">
+        <a href="adicionar.html" class="nav-btn">➕ Nova Loja</a>
+        <a href="editar.html" class="nav-btn active">✏️ Editar Loja</a>
+        <a href="cadastro.html" class="nav-btn outline">⚙️ Painel de Gerentes</a>
+    </div>
+
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>DIVE Master ✏️</h1>
+            <p>Selecione um local na nuvem para corrigir informações.</p>
+        </div>
+
+        <form id="edit-form">
+            <div class="form-group">
+                <label>Selecione a Loja</label>
+                <select id="edit-select">
+                    <option value="" disabled selected>Aguarde, conectando na nuvem...</option>
+                </select>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
+
+            <div class="form-group">
+                <label>Nome Oficial da Loja</label>
+                <input type="text" id="edit-name" required disabled>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Latitude (Lat)</label>
+                    <input type="number" step="any" id="edit-lat" required disabled>
+                </div>
+                <div style="flex: 1;">
+                    <label>Longitude (Lng)</label>
+                    <input type="number" step="any" id="edit-lng" required disabled>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>URL do Ícone (Logo da loja - opcional)</label>
+                <input type="url" id="edit-icon" disabled>
+            </div>
+
+            <div class="form-group">
+                <label>Site / Rede Social (Opcional)</label>
+                <input type="url" id="edit-site" disabled>
+            </div>
+
+            <div class="form-group">
+                <label>Texto de Horários Físicos (Para os popups)</label>
+                <input type="text" id="edit-hours-text" required disabled>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Seg a Sáb (Abre)</label>
+                    <input type="number" id="edit-week-open" required min="0" max="24" disabled>
+                </div>
+                <div style="flex: 1;">
+                    <label>Seg a Sáb (Fecha)</label>
+                    <input type="number" id="edit-week-close" required min="0" max="24" disabled>
+                </div>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Domingos (Abre)</label>
+                    <input type="number" id="edit-sun-open" required min="0" max="24" disabled>
+                </div>
+                <div style="flex: 1;">
+                    <label>Domingos (Fecha)</label>
+                    <input type="number" id="edit-sun-close" required min="0" max="24" disabled>
+                </div>
+            </div>
+
+            <button type="submit" class="primary-btn" id="btn-save" style="margin-top: 15px;" disabled>💾 Salvar Alterações Raiz</button>
+            <button type="button" class="primary-btn" id="btn-delete" style="margin-top: 10px; background: #e74c3c; opacity: 0.8;" disabled>🗑️ Excluir Loja Permanentemente</button>
+        </form>
+    </div>
+
+    <script type="module" src="editar.js"></script>
+</body>
+</html>
