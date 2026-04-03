@@ -1,5 +1,13 @@
 import { db } from './firebase-config.js';
 import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { requireAuth, attachLogoutHandler } from './auth.js';
+
+// Tranca a página, apenas prossegue se autenticado
+requireAuth((user) => {
+    // Injeta botão de Sair
+    const btnLogout = document.getElementById('logout-btn');
+    if (btnLogout) attachLogoutHandler(btnLogout);
+});
 
 const form = document.getElementById('master-form');
 

@@ -1,5 +1,11 @@
 import { db } from './firebase-config.js';
 import { doc, getDoc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { requireAuth, attachLogoutHandler } from './auth.js';
+
+requireAuth((user) => {
+    const btnLogout = document.getElementById('logout-btn');
+    if (btnLogout) attachLogoutHandler(btnLogout);
+});
 
 // Referências aos elementos
 const form = document.getElementById('business-form');

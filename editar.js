@@ -1,5 +1,12 @@
 import { db } from './firebase-config.js';
 import { doc, getDocs, collection, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+import { requireAuth, attachLogoutHandler } from './auth.js';
+
+// Tranca a página
+requireAuth((user) => {
+    const btnLogout = document.getElementById('logout-btn');
+    if (btnLogout) attachLogoutHandler(btnLogout);
+});
 
 const form = document.getElementById('edit-form');
 const select = document.getElementById('edit-select');
