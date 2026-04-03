@@ -3,6 +3,7 @@ let userMarker = null;
 let isFirstLocation = true;
 const notifiedIds = new Set();
 let mapRef = null;
+let lastProcessedCoords = null; // Variável para o Debounce de distância
 
 export function initGPS(mapInstance, onLocationUpdate, onProximityAlert) {
     if (!window.isSecureContext) console.warn("GPS requer HTTPS/Localhost.");
@@ -12,7 +13,18 @@ export function initGPS(mapInstance, onLocationUpdate, onProximityAlert) {
         navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude, accuracy } = position.coords;
-                currentUserPosition = [latitude, longitude];
+                const newCoords = [latitude, longitude];
+                
+                // Trava de Otimização: Ignora recálculos se andou menos de 20 metros
+                if (lastProcessedCoords && !isFirstLocation) {
+                    const moveDistance = mapInstance.distance(lastProcessedCoords, newCoords);
+                    if (moveDistance < 20) {
+                        return; // O usuário quase não se moveu. Poupa a bateria.
+                    }
+                }
+                lastProcessedCoords = newCoords;
+                
+                currentUserPosition = newCoords;
                 
                 if (onProximityAlert) onProximityAlert(currentUserPosition, notifiedIds);
                 
