@@ -1,82 +1,43 @@
-# DIVE 2.0 📍
+# DIVE 2.0 📍 (Enterprise Cloud Edition)
 
-O **DIVE 2.0** é um Progressive Web App (PWA) de mapa interativo com atualizações em tempo real.
+O **DIVE 2.0** evoluiu de um projeto protótipo para um Aplicativo Georreferenciado Profissional (PWA) de mapa interativo, operando de forma modular e conectado integralmente à nuvem através do Google Firebase.
 
-> ℹ️ **Fase de Testes:** Atualmente, os testes estão sendo realizados **apenas em supermercados**, devido ao alto volume de circulação de pessoas nesses locais, além de serem ambientes onde os usuários buscam ativamente **economizar**.
+> ℹ️ **Status do Projeto:** A infraestrutura de Nuvem e Service Workers já está em pleno funcionamento. A aplicação dispensa totalmente um banco de dados local. Toda atualização nos painéis Master ou Business reflete ao vivo (via WebSocket) nos aparelhos dos usuários finais.
 
-## 🚀 Funcionalidades
+## 🚀 Novas Super Funcionalidades (V2)
 
-*   **Mapa Interativo:** Navegação fluida usando Leaflet.js.
-*   **Filtros Avançados:**
-    *   🔥 **Agitado:** Locais com lotação alta, filas ou muitas promoções.
-    *   🧊 **Tranquilo:** Locais vazios, ideais para compras rápidas.
-    *   🔍 **Busca:** Pesquisa instantânea por nome do estabelecimento.
-    *   📏 **Raio:** Filtre locais por distância (1km, 3km, 5km).
-*   **Geolocalização:** Mostra sua posição atual e calcula a distância até os locais.
-*   **Página de Ofertas:** Detalhes completos com horário de funcionamento, status em tempo real (Aberto/Fechado) e lista de produtos.
-*   **Animações e Efeitos:** Confetes nas promoções, marcadores pulsantes no mapa e "Toasts" visuais.
-*   **Modo Noturno Automático:** O tema muda automaticamente entre 18h e 06h, invertendo as cores do mapa para conforto visual.
-*   **Clustering:** Agrupamento de marcadores próximos para evitar poluição visual no mapa.
-*   **PWA (Offline):** Funciona sem internet após o primeiro acesso e pode ser instalado no celular.
-*   **Painel Administrativo:** Área exclusiva para estabelecimentos atualizarem seu status e promoções em tempo real (`cadastro.html`).
-*   **Notificações Inteligentes:**
-    *   🔔 **Promoções:** Receba alertas quando um local lança uma oferta.
-    *   📍 **Proximidade:** O app avisa quando você passa perto de um local parceiro.
+*   **100% Nuvem (Firebase Firestore):** Os marcadores não existem mais em arquivos `.js`. Tudo vive em um servidor Global, sincronizando promoções ao vivo.
+*   **Abolição de "Refresh":** Leituras feitas no Firebase Firebase atrelam Listeners WebSockets. Quando um mercado é fundado ou lança promoção na nuvem, o aplicativo do usuário se repinta sozinho instantaneamente.
+*   **Offline-First de Alto Nível:** O Service worker novo (`sw.js`) agora salva as peças de ruas do *OpenStreetMap* em um cofre no próprio celular. Se perder a internet, toda a cidade do mapa vai ligar mesmo assim, com fundos desenhados.
+*   **Notificações de Proximidade:** Caminhando na rua, o celular cruza a distância vetorial sua com aos pontos do Firebase e atira Toasts nativos na tela quando se aproxima do estabelecimento.
 
-## 🛠️ Tecnologias Utilizadas
+## 👑 O Ecossistema Administrativo (Sem Códigos)
+Não é mais necessário abrir o seu editor de códigos (VS Code) para programar um marcador de um supermercado, agora temos sistemas em interfaces:
 
-*   HTML5, CSS3, JavaScript (Vanilla)
-*   [Leaflet.js](https://leafletjs.com/) (Mapas)
-*   [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) (Agrupamento)
-*   Service Workers (Cache e Offline)
+*   **O Painel Master (`/adicionar.html` e `/editar.html`):** Para fundar novas filiais e unidades. Lá você diz o Nome, Fuso-horário e Coordenadas do GPS de uma só vez, criando um Documento ID único blindado.
+*   **O Painel dos Parceiros/Gerentes (`/cadastro.html`):** Uma tela limitada apenas aos donos e gerentes do momento para alterarem rapidamente se a loja está *Agitada/Tranquila*, ou para colarem cupons de Descontos que aparecem no mapa na mesma hora.
 
-## 📂 Estrutura do Projeto
+## 🛠️ Tecnologias Utilizadas (Avançadas)
+*   Google Firebase SDK v10 (Firestore Database)
+*   Módulos Nativos `ES Modules` (import/export JS)
+*   Leaflet.js com algoritmos agressivos de Clusterização 
+*   Estratégia de Cache Mista (Stale-While-Revalidate + Cache-First)
 
-*   **`index.html`**: Estrutura principal, importa as bibliotecas e define o layout base.
-*   **`style.css`**: Contém todos os estilos, animações (pulso, flutuação) e regras do Modo Noturno.
-*   **`app.js`**: O "cérebro" do app. Contém a lógica do mapa, os dados dos locais (mock), filtros e geolocalização.
-*   **`data.js`**: Banco de dados compartilhado (Single Source of Truth). Contém a lista de locais, horários e produtos.
-*   **`promocao.html`**: Página de detalhes do estabelecimento, com lógica de horário (Aberto/Fechado) e botões de ação.
-*   **`admin.js`**: Lógica do painel administrativo para atualizar status via LocalStorage.
-*   **`sw.js`**: Service Worker. Gerencia o cache para que o app funcione offline e carregue rápido.
-*   **`manifest.json`**: Arquivo de configuração que permite o app ser instalado no celular (ícone, nome, cores).
+## 📂 Nova Estrutura Arquitetural (Modular)
+Uma grande reforma cortou o gigantesco "app.js" em pequenos agentes especialistas:
+*   **`app.js`**: O grande "Maestro". Ele não possui mais regras, apenas importa os componentes e coordena quem vai trabalhar e em que momento.
+*   **`database.js`**: O comunicador exclusivo com o Google. Puxa os dados dos supermercados para injetar no sistema.
+*   **`gps.js`**: Monitora via satélite os passos do cliente e faz a matemática vetorial dos raios de alerta.
+*   **`map.js`**: Entende apenas de pincel. Cuida do Leaflet, desenhando marcadores, o fundo claro/escuro e o Cluster de números na tela.
+*   **`notifications.js`**: Controlador puro dos Toasts visuais e das futuras vibrações de tela.
+*   **`firebase-config.js`**: Chaves secretas de passaporte para a sua nuvem.
+*   **`sw.js`**: O Interceptador de internet que dá a imunidade Offline pro app.
 
-## 💻 Como Rodar o Projeto
+## 💻 Como Rodar o Projeto (Para Desenvolvedores)
+1. Certifique-se de que está usando um Ambiente de Servidor Local (`Live Server` no VSCode) visto que a política de Strict Mime Type trava a exportação de módulos puros via duplo-clique.
+2. Certifique-se também de que suas credenciais do Firebase estão em dia dentro do `firebase-config.js`.
 
-Como este projeto utiliza **Service Workers** e **Geolocalização**, ele precisa ser servido via **HTTPS** ou **localhost** para funcionar corretamente.
-
-1.  Clone ou baixe a pasta do projeto.
-2.  Use uma extensão como "Live Server" no VS Code ou rode um servidor simples (ex: `python -m http.server`).
-3.  Abra o arquivo `index.html` no navegador.
-4.  Permita o acesso à localização quando solicitado.
-
-## 📱 Instalação (Mobile)
-
-1.  Acesse o projeto pelo navegador do celular (Chrome no Android ou Safari no iOS).
-2.  Toque no menu e selecione **"Adicionar à Tela Inicial"** ou **"Instalar App"**.
-3.  O DIVE 2.0 funcionará como um aplicativo nativo em tela cheia.
-
-## 🎨 Como Personalizar
-
-Para adicionar novos locais, abra o arquivo **`data.js`** e adicione um novo objeto ao array `sharedEstablishments`:
-
-```javascript
-{
-    id: 99,
-    name: "Novo Local Incrível",
-    coords: [-23.550520, -46.633308], // Latitude e Longitude
-    status: "fire", // Opções: "fire", "chill", "live"
-    msg: "<b>OFERTA:</b> Cerveja 350ml R$ 2,99",
-    color: "red", // Cor do ícone
-    icon: "https://site.com/logo.png",
-    hours: "Seg-Sex: 08:00 - 18:00"
-}
-```
-
-## 🔮 Melhorias Futuras
-
-*   [ ] Sistema de Favoritos (LocalStorage).
-*   [ ] Integração com Backend Real (Node.js/Firebase).
-*   [ ] Sistema de Login para usuários e estabelecimentos.
-*   [ ] Rotas traçadas diretamente no mapa.
-*   [ ] Chat entre usuários no mesmo local.
+## 🔮 O Futuro de DIVE
+*   [ ] Autenticação Robusta (Restringir Painéis Master com Conta/Senha Firebase Auth).
+*   [ ] Push Notifications (Para avisar a cidade inteira quando o app está fechado via *FCM*).
+*   [ ] Sistema de Trajeto e Rotas nativos da rua ate o Supermercado desejado.
