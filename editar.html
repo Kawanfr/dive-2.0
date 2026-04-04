@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="scrollable">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,6 +8,7 @@
     <title>DIVE Master - Editar Loja</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="scrollable">
 
     <div class="master-nav">
@@ -34,7 +36,7 @@
 
             <div class="form-group">
                 <label>Nome Oficial da Loja</label>
-                <input type="text" id="edit-name" required disabled>
+                <input type="text" id="edit-name" required disabled maxlength="30">
             </div>
 
             <div class="form-group" style="display: flex; gap: 10px;">
@@ -50,17 +52,17 @@
 
             <div class="form-group">
                 <label>URL do Ícone (Logo da loja - opcional)</label>
-                <input type="url" id="edit-icon" disabled>
+                <input type="url" id="edit-icon" disabled maxlength="120">
             </div>
 
             <div class="form-group">
                 <label>Site / Rede Social (Opcional)</label>
-                <input type="url" id="edit-site" disabled>
+                <input type="url" id="edit-site" disabled maxlength="120">
             </div>
 
             <div class="form-group">
                 <label>Texto de Horários Físicos (Para os popups)</label>
-                <input type="text" id="edit-hours-text" required disabled>
+                <input type="text" id="edit-hours-text" required disabled maxlength="15">
             </div>
 
             <div class="form-group" style="display: flex; gap: 10px;">
@@ -85,11 +87,15 @@
                 </div>
             </div>
 
-            <button type="submit" class="primary-btn" id="btn-save" style="margin-top: 15px;" disabled>💾 Salvar Alterações Raiz</button>
-            <button type="button" class="primary-btn" id="btn-delete" style="margin-top: 10px; background: #e74c3c; opacity: 0.8;" disabled>🗑️ Excluir Loja Permanentemente</button>
+            <button type="submit" class="primary-btn" id="btn-save" style="margin-top: 15px;" disabled>💾 Salvar
+                Alterações Raiz</button>
+            <button type="button" class="primary-btn" id="btn-delete"
+                style="margin-top: 10px; background: #e74c3c; opacity: 0.8;" disabled>🗑️ Excluir Loja
+                Permanentemente</button>
         </form>
     </div>
 
     <script type="module" src="editar.js"></script>
 </body>
+
 </html>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="scrollable">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -7,13 +8,15 @@
     <title>Dive Business - Área do Parceiro</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="scrollable">
 
     <div class="master-nav">
         <a href="adicionar.html" class="nav-btn outline">➕ Nova Loja</a>
         <a href="editar.html" class="nav-btn outline">✏️ Editar Loja</a>
         <a href="cadastro.html" class="nav-btn active">⚙️ Gerentes</a>
-        <a href="#" id="logout-btn" class="nav-btn outline" style="border-color: #e74c3c; color: #e74c3c;">🚪 Mudar Conta</a>
+        <a href="#" id="logout-btn" class="nav-btn outline" style="border-color: #e74c3c; color: #e74c3c;">🚪 Mudar
+            Conta</a>
     </div>
 
     <div class="admin-container">
@@ -39,7 +42,17 @@
 
             <div class="form-group">
                 <label>Mensagem / Promoção</label>
-                <textarea id="place-msg" rows="3" placeholder="Ex: Rodada dupla de Chopp até as 20h!"></textarea>
+                <textarea id="place-msg" rows="3" placeholder="Ex: Rodada dupla de Chopp até as 20h!" maxlength="150"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Duração desta Promoção/Status</label>
+                <select id="place-duration">
+                    <option value="30">⏱️ Acaba em 30 Minutos e some</option>
+                    <option value="120">⏳ Acaba em 2 Horas</option>
+                    <option value="1440">📅 Válido até Amanhã (24h)</option>
+                    <option value="perm">📌 Fixo Permanente</option>
+                </select>
             </div>
 
             <button type="submit" class="primary-btn">🚀 Atualizar Status</button>
@@ -49,4 +62,5 @@
 
     <script type="module" src="admin.js"></script>
 </body>
+
 </html>

@@ -18,26 +18,26 @@ async function populateDropdown() {
         const snapshot = await getDocs(collection(db, 'establishments'));
         const establishments = [];
         snapshot.forEach(docSnap => establishments.push(docSnap.data()));
-        
+
         placeSelect.innerHTML = '';
         if (establishments.length === 0) {
             placeSelect.innerHTML = '<option value="" disabled selected>Nenhuma loja encontrada</option>';
             return;
         }
-        
+
         // Ordena por nome
-        establishments.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
-        
+        establishments.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
         establishments.forEach(place => {
             const option = document.createElement('option');
             option.value = place.id;
             option.textContent = place.name;
             placeSelect.appendChild(option);
         });
-        
+
         // Dispara o evento ao carregar
         placeSelect.dispatchEvent(new Event('change'));
-    } catch(err) {
+    } catch (err) {
         console.error("Erro ao carregar lojas:", err);
         placeSelect.innerHTML = '<option value="" disabled selected>Erro de conexão</option>';
     }
@@ -47,7 +47,7 @@ populateDropdown();
 // 2. Função para carregar dados salvos ao selecionar um local da Nuvem
 placeSelect.addEventListener('change', async () => {
     const selectedId = placeSelect.value;
-    
+
     // Mostra loading no botão 
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.innerText = "Carregando...";
@@ -56,19 +56,19 @@ placeSelect.addEventListener('change', async () => {
     try {
         const docRef = doc(db, "establishments", String(selectedId));
         const docSnap = await getDoc(docRef);
-        
+
         if (docSnap.exists()) {
             const data = docSnap.data();
             document.getElementById('place-status').value = data.status || "fire";
             document.getElementById('place-msg').value = data.msg || "";
         } else {
             // Padrão se nunca foi alterado
-            document.getElementById('place-status').value = "fire"; 
+            document.getElementById('place-status').value = "fire";
             document.getElementById('place-msg').value = "";
         }
-    } catch(err) {
+    } catch (err) {
         console.error("Erro ao buscar dados na nuvem:", err);
-        document.getElementById('place-status').value = "fire"; 
+        document.getElementById('place-status').value = "fire";
         document.getElementById('place-msg').value = "";
     } finally {
         submitBtn.innerText = "🚀 Atualizar Status";
@@ -85,18 +85,25 @@ form.addEventListener('submit', async (e) => {
     const selectedId = parseInt(placeSelect.value);
     const selectedName = placeSelect.options[placeSelect.selectedIndex].text;
     const status = document.getElementById('place-status').value;
+    const duration = document.getElementById('place-duration').value;
     
     // Define a cor baseada no status
     let color = 'red';
     if (status === 'chill') color = '#3498db';
     else if (status === 'live') color = '#f1c40f';
 
+    let expiresAt = null;
+    if (duration !== 'perm') {
+       expiresAt = Date.now() + parseInt(duration) * 60000;
+    }
+
     const updateData = {
         id: selectedId,
         name: selectedName,
         status: status,
-        msg: document.getElementById('place-msg').value,
+        msg: document.getElementById('place-msg').value.trim().slice(0, 150),
         color: color,
+        expiresAt: expiresAt,
         updatedAt: new Date().toISOString()
     };
 
@@ -107,7 +114,7 @@ form.addEventListener('submit', async (e) => {
     try {
         await setDoc(doc(db, "establishments", String(selectedId)), updateData, { merge: true });
         alert(`🎉 Status de "${selectedName}" atualizado com sucesso na nuvem!`);
-    } catch(err) {
+    } catch (err) {
         console.error(err);
         alert(`❌ Erro ao salvar: ${err.message}`);
     } finally {

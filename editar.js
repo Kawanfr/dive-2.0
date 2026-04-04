@@ -41,10 +41,10 @@ async function loadPlaces() {
         const snapshot = await getDocs(collection(db, 'establishments'));
         currentPlaces = [];
         snapshot.forEach(d => currentPlaces.push(d.data()));
-        
+
         select.innerHTML = '<option value="" disabled selected>Escolha uma loja...</option>';
-        currentPlaces.sort((a,b) => (a.name || "").localeCompare(b.name || ""));
-        
+        currentPlaces.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
         currentPlaces.forEach(place => {
             const option = document.createElement('option');
             option.value = place.id;
@@ -69,7 +69,7 @@ select.addEventListener('change', () => {
     inputs.icon.value = place.icon || "";
     inputs.site.value = place.website || "";
     inputs.hoursText.value = place.hours ? place.hours.replace("🕒", "").trim() : "";
-    
+
     if (place.schedule) {
         inputs.weekOpen.value = place.schedule.week ? place.schedule.week[0] : "";
         inputs.weekClose.value = place.schedule.week ? place.schedule.week[1] : "";
@@ -97,11 +97,11 @@ form.addEventListener('submit', async (e) => {
         if (!hoursText.includes("🕒")) hoursText = "🕒 " + hoursText;
 
         const updatePayload = {
-            name: inputs.name.value,
+            name: inputs.name.value.trim().slice(0, 30),
             coords: [parseFloat(inputs.lat.value), parseFloat(inputs.lng.value)],
-            icon: inputs.icon.value,
-            website: inputs.site.value,
-            hours: hoursText,
+            icon: inputs.icon.value.trim().slice(0, 120),
+            website: inputs.site.value.trim().slice(0, 120),
+            hours: hoursText.trim().slice(0, 15),
             schedule: {
                 week: [parseInt(inputs.weekOpen.value), parseInt(inputs.weekClose.value)],
                 sun: [parseInt(inputs.sunOpen.value), parseInt(inputs.sunClose.value)]
@@ -110,17 +110,17 @@ form.addEventListener('submit', async (e) => {
 
         // Usa o flag Merge para não deletar Status e MSG do admin manager
         await setDoc(doc(db, "establishments", idStr), updatePayload, { merge: true });
-        
+
         alert("✅ Loja editada com Sucesso no Mapa Global!");
         loadPlaces(); // Recarrega
-        
+
         form.reset();
         Object.values(inputs).forEach(i => i.disabled = true);
         btnSave.disabled = true;
         btnDelete.disabled = true;
         btnSave.innerText = "💾 Salvar Alterações Raiz";
-        
-    } catch(err) {
+
+    } catch (err) {
         alert("❌ Erro ao Salvar Edições: " + err.message);
         btnSave.disabled = false;
         btnSave.innerText = "💾 Salvar Alterações Raiz";
@@ -131,7 +131,7 @@ form.addEventListener('submit', async (e) => {
 btnDelete.addEventListener('click', async () => {
     if (!select.value) return;
     const place = currentPlaces.find(p => String(p.id) === String(select.value));
-    
+
     // Dupla checagem de Segurança
     const confirm1 = confirm(`CUIDADO: Deseja ATOMICAMENTE apagar a loja "${place.name}" de todos os celulares?`);
     if (!confirm1) return;
@@ -152,7 +152,7 @@ btnDelete.addEventListener('click', async () => {
         Object.values(inputs).forEach(i => i.disabled = true);
         btnSave.disabled = true;
         btnDelete.disabled = true;
-    } catch(err) {
+    } catch (err) {
         alert("❌ Erro ao deletar: " + err.message);
     } finally {
         btnDelete.innerText = "🗑️ Excluir Loja Permanentemente";

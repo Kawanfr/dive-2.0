@@ -23,12 +23,12 @@ form.addEventListener('submit', async (e) => {
         const newId = Date.now();
 
         // Extrações da UI
-        const name = document.getElementById('new-name').value;
+        const name = document.getElementById('new-name').value.trim().slice(0, 30);
         const lat = parseFloat(document.getElementById('new-lat').value);
         const lng = parseFloat(document.getElementById('new-lng').value);
-        const icon = document.getElementById('new-icon').value || "";
-        const website = document.getElementById('new-site').value || "";
-        let hoursText = document.getElementById('new-hours-text').value;
+        const icon = (document.getElementById('new-icon').value || "").trim().slice(0, 120);
+        const website = (document.getElementById('new-site').value || "").trim().slice(0, 120);
+        let hoursText = document.getElementById('new-hours-text').value.trim().slice(0, 15);
 
         if (!hoursText.includes("🕒")) {
             hoursText = "🕒 " + hoursText; // Força estilização automática
@@ -61,11 +61,11 @@ form.addEventListener('submit', async (e) => {
         await setDoc(doc(db, "establishments", String(newId)), newEstablishmentData, { merge: true });
 
         alert(`🎉 SUCESSO!\nA loja "${name}" acaba de nascer no mapa e os clientes já podem visualizá-la em tempo real! 🎉`);
-        
+
         // Limpa a tela
         form.reset();
 
-    } catch(err) {
+    } catch (err) {
         console.error(err);
         alert(`❌ Erro no provedor DB: ${err.message}`);
     } finally {

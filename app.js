@@ -16,6 +16,17 @@ window.showPromo = (id) => {
     showToast(`📢 <strong>${place.name}</strong><br>${place.msg || "Nenhuma promoção."}`);
 };
 
+// HELPER: Validação dinâmica de prazo de validade
+function getActiveEstablishments() {
+    return globalEstablishments.map(p => {
+        if (p.expiresAt && Date.now() > p.expiresAt && p.status !== 'chill') {
+            return { ...p, status: 'chill', msg: '', color: '#3498db' };
+        }
+        return p;
+    });
+}
+
+
 // 2. Tenta iniciar / semear a NUVEM
 initializeDB(() => {
     
@@ -23,10 +34,11 @@ initializeDB(() => {
     subscribeToEstablishments(
         // Callback para pintar interface
         (payload) => {
-            renderMarkers(payload, currentUserPosition);
+            renderMarkers(getActiveEstablishments(), currentUserPosition);
         },
         // Callback de Push Nativo (Quando alguem do outro lado editar e chegar para a gente via WS)
         (place) => {
+            if (place.expiresAt && Date.now() > place.expiresAt) return; // Bloqueia push fantasma se receber pacote ja vencido
             triggerPushNotification(`Nova Oferta em ${place.name}!`, place.msg || "Confira o status!");
         }
     );
@@ -35,10 +47,11 @@ initializeDB(() => {
 // 4. Inicia Monitorador Logístico GPS (Escuta constante ligada junto com Renderizacao)
 initGPS(map, 
     // Quando a lat/lng alterar
-    () => { renderMarkers(globalEstablishments, currentUserPosition); },
+    () => { renderMarkers(getActiveEstablishments(), currentUserPosition); },
     // Quando um mercado bater com a distância e ainda nao foi notificado
     (userPos, notifiedSet) => {
-        globalEstablishments.forEach(place => {
+        getActiveEstablishments().forEach(place => {
+            if (place.status === 'chill') return; // Nao alerta proximidade de lojas frias de promoçao
             const dist = map.distance(userPos, place.coords);
             if (dist <= 1500 && !notifiedSet.has(place.id)) {
                 
@@ -60,7 +73,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         setCurrentFilter(e.target.dataset.filter);
-        renderMarkers(globalEstablishments, currentUserPosition);
+        renderMarkers(getActiveEstablishments(), currentUserPosition);
     });
 });
 
@@ -70,7 +83,7 @@ document.getElementById('search-input')?.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         setCurrentSearch(e.target.value);
-        renderMarkers(globalEstablishments, currentUserPosition);
+        renderMarkers(getActiveEstablishments(), currentUserPosition);
     }, 300);
 });
 
@@ -78,8 +91,13 @@ document.getElementById('search-input')?.addEventListener('input', (e) => {
 document.getElementById('radius-filter')?.addEventListener('change', (e) => {
     const val = e.target.value;
     setCurrentRadius(val === 'all' ? Infinity : parseInt(val));
-    renderMarkers(globalEstablishments, currentUserPosition);
+    renderMarkers(getActiveEstablishments(), currentUserPosition);
 });
+
+// Relógio Saneador (Limpa promoções visuais em tempo real na tela mesmo se o usuário não mexer)
+setInterval(() => {
+    renderMarkers(getActiveEstablishments(), currentUserPosition);
+}, 60000);
 
 // Centralizar GPS
 const centerBtn = document.getElementById('center-btn');

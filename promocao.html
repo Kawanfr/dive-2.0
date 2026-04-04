@@ -71,6 +71,11 @@
         }
 
         if (establishmentData) {
+            if (establishmentData.expiresAt && Date.now() > establishmentData.expiresAt && establishmentData.status !== 'chill') {
+                establishmentData.status = 'chill';
+                establishmentData.msg = "❌ Esta promoção já expirou ou o horário foi encerrado pelo estabelecimento. Fique de olho na próxima!";
+            }
+
             // Preenche a UI
             document.getElementById('promo-title').innerText = establishmentData.name;
             document.getElementById('promo-logo').src = establishmentData.icon || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
