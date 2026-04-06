@@ -22,6 +22,7 @@ const inputs = {
     lng: document.getElementById('edit-lng'),
     icon: document.getElementById('edit-icon'),
     site: document.getElementById('edit-site'),
+    ownerEmail: document.getElementById('edit-owner-email'),
     hoursText: document.getElementById('edit-hours-text'),
     weekOpen: document.getElementById('edit-week-open'),
     weekClose: document.getElementById('edit-week-close'),
@@ -68,6 +69,7 @@ select.addEventListener('change', () => {
     inputs.lng.value = place.coords ? place.coords[1] : "";
     inputs.icon.value = place.icon || "";
     inputs.site.value = place.website || "";
+    inputs.ownerEmail.value = place.ownerEmail || "";
     inputs.hoursText.value = place.hours ? place.hours.replace("🕒", "").trim() : "";
 
     if (place.schedule) {
@@ -101,6 +103,7 @@ form.addEventListener('submit', async (e) => {
             coords: [parseFloat(inputs.lat.value), parseFloat(inputs.lng.value)],
             icon: inputs.icon.value.trim().slice(0, 120),
             website: inputs.site.value.trim().slice(0, 120),
+            ownerEmail: inputs.ownerEmail.value.trim(),
             hours: hoursText.trim().slice(0, 15),
             schedule: {
                 week: [parseInt(inputs.weekOpen.value), parseInt(inputs.weekClose.value)],

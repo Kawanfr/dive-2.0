@@ -4,6 +4,11 @@ export let currentFilter = 'all';
 export let currentSearch = '';
 export let currentRadius = Infinity;
 
+export function escapeHTML(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+}
+
 export function initMap(elementId = 'map') {
     const initialLat = -23.646184;
     const initialLng = -46.732581;
@@ -114,6 +119,11 @@ export function renderMarkers(places, userPos) {
 
     filteredPlaces.forEach(place => {
         if(!place.coords) return;
+        
+        // --- BLINDAGEM CROSS-SITE SCRIPTING (XSS) ---
+        const safeName = escapeHTML(place.name);
+        const safeWebsite = escapeHTML(place.website);
+        
         let distanceHtml = '';
         if (userPos) {
             const dist = map.distance(userPos, place.coords);
@@ -123,12 +133,12 @@ export function renderMarkers(places, userPos) {
 
         L.marker(place.coords, {
             icon: createIcon(place.color, place.status, place.icon),
-            title: place.name
+            title: safeName
         }).addTo(markersLayer).bindPopup(`
             <div class="popup-card">
                 <div class="popup-header">
-                    <div style="padding-right: 60px;">${place.name}</div>
-                    ${place.website ? `<a href="${place.website}" target="_blank" class="popup-website-link" style="font-size: 12px; color: #a2d9ff;">🌐 ${place.name.split(' ')[0]}</a>` : ''}
+                    <div style="padding-right: 60px;">${safeName}</div>
+                    ${place.website ? `<a href="${safeWebsite}" target="_blank" class="popup-website-link" style="font-size: 12px; color: #a2d9ff;">🌐 ${safeName.split(' ')[0]}</a>` : ''}
                 </div>
                 <div class="popup-body" style="padding-top:0;">
                     ${distanceHtml}

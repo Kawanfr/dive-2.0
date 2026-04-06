@@ -3,3 +3,7 @@ Thumbs.db
 .vscode/
 node_modules/
 *.log
+
+# Firebase Admin Service Account (Chave do Banco)
+serviceAccountKey.json
+.env

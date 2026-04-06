@@ -12,9 +12,9 @@
 <body class="scrollable">
 
     <div class="master-nav">
-        <a href="adicionar.html" class="nav-btn active">➕ Nova Loja</a>
-        <a href="editar.html" class="nav-btn">✏️ Editar Loja</a>
-        <a href="cadastro.html" class="nav-btn outline">⚙️ Painel de Gerentes</a>
+        <a href="adicionar.html" class="nav-btn master-only active">➕ Nova Loja</a>
+        <a href="editar.html" class="nav-btn outline master-only">✏️ Editar Loja</a>
+        <a href="cadastro.html" class="nav-btn outline">⚙️ Painel de Promoções</a>
         <a href="#" id="logout-btn" class="nav-btn outline" style="border-color: #e74c3c; color: #e74c3c;">🚪 Sair</a>
     </div>
 
@@ -50,6 +50,11 @@
             <div class="form-group">
                 <label>Site / Rede Social (Opcional)</label>
                 <input type="url" id="new-site" placeholder="https://www.extra.com.br" maxlength="120">
+            </div>
+
+            <div class="form-group">
+                <label>E-mail do Proprietário/Gerente (Opcional - Para uso futuro)</label>
+                <input type="email" id="new-owner-email" placeholder="Deixe em branco se a loja for gerenciada apenas por você">
             </div>
 
             <div class="form-group">

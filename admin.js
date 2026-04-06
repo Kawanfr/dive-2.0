@@ -1,10 +1,13 @@
 import { db } from './firebase-config.js';
 import { doc, getDoc, setDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { requireAuth, attachLogoutHandler } from './auth.js';
+import { requireAuth, attachLogoutHandler, isMaster } from './auth.js';
 
 requireAuth((user) => {
     const btnLogout = document.getElementById('logout-btn');
     if (btnLogout) attachLogoutHandler(btnLogout);
+
+    // Dispara a montagem da lista apenas DEPOIS de sabermos quem é o cara
+    populateDropdown(user);
 });
 
 // Referências aos elementos
@@ -12,16 +15,22 @@ const form = document.getElementById('business-form');
 const placeSelect = document.getElementById('place-select');
 
 // 1. Preencher o Dropdown dinamicamente via Nuvem
-async function populateDropdown() {
+async function populateDropdown(user) {
     placeSelect.innerHTML = '<option value="" disabled selected>Carregando lojas da nuvem...</option>';
     try {
         const snapshot = await getDocs(collection(db, 'establishments'));
-        const establishments = [];
+        let establishments = [];
         snapshot.forEach(docSnap => establishments.push(docSnap.data()));
+
+        // --- TRAVA DE SEGURANÇA CAMADA 1: ISOLAMENTO VISUAL ---
+        if (!isMaster(user)) {
+            // Se o e-mail não for Mestre, filtra estritamente as lojas que ele possui a chave "ownerEmail"
+            establishments = establishments.filter(p => p.ownerEmail === user.email);
+        }
 
         placeSelect.innerHTML = '';
         if (establishments.length === 0) {
-            placeSelect.innerHTML = '<option value="" disabled selected>Nenhuma loja encontrada</option>';
+            placeSelect.innerHTML = '<option value="" disabled selected>🔒 Nenhuma loja vinculada ao seu E-mail</option>';
             return;
         }
 
@@ -42,7 +51,6 @@ async function populateDropdown() {
         placeSelect.innerHTML = '<option value="" disabled selected>Erro de conexão</option>';
     }
 }
-populateDropdown();
 
 // 2. Função para carregar dados salvos ao selecionar um local da Nuvem
 placeSelect.addEventListener('change', async () => {
@@ -86,7 +94,7 @@ form.addEventListener('submit', async (e) => {
     const selectedName = placeSelect.options[placeSelect.selectedIndex].text;
     const status = document.getElementById('place-status').value;
     const duration = document.getElementById('place-duration').value;
-    
+
     // Define a cor baseada no status
     let color = 'red';
     if (status === 'chill') color = '#3498db';
@@ -94,7 +102,7 @@ form.addEventListener('submit', async (e) => {
 
     let expiresAt = null;
     if (duration !== 'perm') {
-       expiresAt = Date.now() + parseInt(duration) * 60000;
+        expiresAt = Date.now() + parseInt(duration) * 60000;
     }
 
     const updateData = {

@@ -28,6 +28,7 @@ form.addEventListener('submit', async (e) => {
         const lng = parseFloat(document.getElementById('new-lng').value);
         const icon = (document.getElementById('new-icon').value || "").trim().slice(0, 120);
         const website = (document.getElementById('new-site').value || "").trim().slice(0, 120);
+        const ownerEmail = document.getElementById('new-owner-email').value.trim();
         let hoursText = document.getElementById('new-hours-text').value.trim().slice(0, 15);
 
         if (!hoursText.includes("🕒")) {
@@ -46,6 +47,7 @@ form.addEventListener('submit', async (e) => {
             coords: [lat, lng],
             icon: icon,
             website: website,
+            ownerEmail: ownerEmail,
             hours: hoursText,
             schedule: {
                 week: [weekOpen, weekClose],
