@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função para verificar se o usuário logado é um dos 3 Mestres
+    function isMaster() {
+      return request.auth != null && 
+             request.auth.token.email in [
+               'kawanautentico@gmail.com', 
+               'guleidi2012@hotmail.com', 
+               'suporte@dive.com'
+             ];
+    }
+
+    // Função que audita se um hacker está tentando mudar peças protegidas do documento
+    // Permite mexer APENAS no botão de Waze (offers) e no termômetro (status, color, updatedAt)
+    function isSafeWazeUpdate() {
+      let allowedKeys = ['offers', 'status', 'color', 'updatedAt'];
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedKeys);
+    }
+
+    match /establishments/{storeId} {
+      // 1. LEITURA ABERTA: Qualquer pessoa no mundo pode ver o mapa e as ofertas
+      allow read: if true;
+      
+      // 2. CRIAÇÃO/DELEÇÃO MESTRA: Apenas vocês podem criar lojas novas ou pulverizar existentes
+      allow create, delete: if isMaster();
+      
+      // 3. ATUALIZAÇÃO BLINDADA: 
+      //    Se você for o Mestre, modifique o que quiser. 
+      //    Se for um anônimo via App, passe no detector de metal (Apenas o Array de Offers pode alterar)
+      allow update: if isMaster() || isSafeWazeUpdate();
+    }
+  }
+}

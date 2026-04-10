@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="scrollable">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2c3e50">
+    <title>DIVE - Master Panel</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: rgba(0,0,0,0.2); color: white; cursor: pointer; border-radius: 8px; font-weight: bold; }
+        .tab-btn.active { background: #3498db; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .auth-container { max-width: 800px; margin: 40px auto; padding: 20px; background: #2c3e50; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .auth-container h2 { text-align: center; color: #fff; margin-bottom: 20px; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; color: #bdc3c7; font-size: 14px; }
+        .auth-input { width: 100%; padding: 12px; border: 1px solid #34495e; border-radius: 8px; background: rgba(0,0,0,0.2); color: #fff; box-sizing: border-box; }
+        .auth-input:focus { border-color: #3498db; outline: none; }
+        .auth-input:disabled { opacity: 0.5; background: rgba(0,0,0,0.5); }
+        
+        .btn-panel { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn-danger { background: #e74c3c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .time-group { display: flex; gap: 10px; }
+        .time-group .auth-input { width: 50%; }
+
+        .top-bar { display: flex; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid #34495e; margin-bottom: 20px; }
+    </style>
+</head>
+<body class="scrollable">
+
+    <div class="auth-container">
+        <div class="top-bar">
+            <span>👑 <strong>Painel Master</strong></span>
+            <div>
+                <a href="index.html" class="secondary-btn" style="text-decoration: none; padding: 8px 12px;">🗺️ Mapa</a>
+                <button id="logout-btn" class="secondary-btn" style="padding: 8px 12px; margin-left: 10px;">🚪 Sair</button>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="create">➕ Criar Loja</button>
+            <button class="tab-btn" data-tab="manage">⚙️ Gerenciar Lojas</button>
+        </div>
+
+        <!-- ABA DE CRIAÇÃO -->
+        <div id="create" class="tab-content active">
+            <form id="create-form">
+                <div class="form-group">
+                    <label>Nome do Estabelecimento</label>
+                    <input type="text" id="new-name" class="auth-input" placeholder="Ex: Supermercado Assaí" required>
+                </div>
+                <div class="time-group">
+                    <div class="form-group" style="flex:1;">
+                        <label>Latitude</label>
+                        <input type="number" step="any" id="new-lat" class="auth-input" required>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Longitude</label>
+                        <input type="number" step="any" id="new-lng" class="auth-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL do Ícone (Logo) - Opcional</label>
+                    <input type="url" id="new-icon" class="auth-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Website oficial - Opcional</label>
+                    <input type="url" id="new-site" class="auth-input" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label>Texto Livre de Horário</label>
+                    <input type="text" id="new-hours-text" class="auth-input" placeholder="Seg-Sáb: 07:00 - 22:00..." required>
+                </div>
+                <label style="color: #bdc3c7; font-size: 14px; margin-bottom: 5px; display: block;">Horário Lógico (Aberto/Fechado)</label>
+                <div class="time-group">
+                    <input type="number" id="week-open" class="auth-input" placeholder="Seg-Sáb (Abre) Ex: 7" required>
+                    <input type="number" id="week-close" class="auth-input" placeholder="Seg-Sáb (Fecha) Ex: 22" required>
+                </div>
+                <div class="time-group">
+                    <input type="number" id="sun-open" class="auth-input" placeholder="Domi (Abre) Ex: 8" required>
+                    <input type="number" id="sun-close" class="auth-input" placeholder="Domi (Fecha) Ex: 18" required>
+                </div>
+                
+                <button type="submit" class="primary-btn btn-panel">💾 Cadastrar Loja no Mapa</button>
+            </form>
+        </div>
+
+        <!-- ABA DE GERENCIAMENTO (EDIÇÃO/EXCLUSÃO) -->
+        <div id="manage" class="tab-content">
+            <div class="form-group">
+                <label>Selecione a Loja para Editar ou Excluir</label>
+                <select id="edit-select" class="auth-input">
+                    <option value="" disabled selected>Carregando lojas da nuvem...</option>
+                </select>
+            </div>
+            
+            <form id="edit-form">
+                <div class="form-group">
+                    <label>Nome do Estabelecimento</label>
+                    <input type="text" id="edit-name" class="auth-input" required disabled>
+                </div>
+                <div class="time-group">
+                    <div class="form-group" style="flex:1;">
+                        <label>Latitude</label>
+                        <input type="number" step="any" id="edit-lat" class="auth-input" required disabled>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Longitude</label>
+                        <input type="number" step="any" id="edit-lng" class="auth-input" required disabled>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>URL do Ícone (Logo) - Opcional</label>
+                    <input type="url" id="edit-icon" class="auth-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Website oficial - Opcional</label>
+                    <input type="url" id="edit-site" class="auth-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Texto Livre de Horário</label>
+                    <input type="text" id="edit-hours-text" class="auth-input" required disabled>
+                </div>
+                <label style="color: #bdc3c7; font-size: 14px; margin-bottom: 5px; display: block;">Horário Lógico (Aberto/Fechado)</label>
+                <div class="time-group">
+                    <input type="number" id="edit-week-open" class="auth-input" required disabled>
+                    <input type="number" id="edit-week-close" class="auth-input" required disabled>
+                </div>
+                <div class="time-group">
+                    <input type="number" id="edit-sun-open" class="auth-input" required disabled>
+                    <input type="number" id="edit-sun-close" class="auth-input" required disabled>
+                </div>
+                
+                <button type="submit" id="btn-save" class="primary-btn btn-panel" disabled>💾 Salvar Alterações na Nuvem</button>
+                <button type="button" id="btn-delete" class="btn-danger" disabled>🗑️ Excluir Loja Permanentemente</button>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Firebase JS -->
+    <script type="module" src="admin-panel.js"></script>
+
+    <script>
+        // Logica simples de Tabs HTML
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.tab).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -9,70 +9,51 @@ export function isMaster(user) {
     return MASTER_ADMINS.includes(user.email);
 }
 
-// Função GERAL para expulsar desconhecidos (O Cão de Guarda)
+// O Cão de Guarda - Protege o Admin Panel
 export function requireAuth(onAuthenticated) {
-    // Isso vai ficar ouvindo "para sempre" e na hora do F5 atira o callback
     onAuthStateChanged(auth, (user) => {
-        if (!user) {
-            // Acesso Negado
+        if (!user || (!isMaster(user) && window.location.pathname.includes('admin-panel.html'))) {
             if (!window.location.pathname.includes('login.html')) {
-                alert("Acesso Negado 🛑\nVocê precisa de um Passaporte Válido para entrar nos Portões Administrativos.");
+                alert("Acesso Negado 🛑\nApenas administradores globais possuem acesso a esta área.");
+                if (user) {
+                    signOut(auth);
+                }
                 window.location.replace('login.html');
             }
         } else {
-            // Acesso Concedido
-            console.log("Portões Abertos! Entidade logada:", user.email);
-
-            // --- BLINDAGEM VISUAL DE CAMADAS ---
-            const isManagerOnly = !isMaster(user);
-            const path = window.location.pathname;
-
-            // Se for gerente tentando acessar tela de adicionar ou editar, exila pra tela de Promocoes
-            if (isManagerOnly && (path.includes('adicionar.html') || path.includes('editar.html'))) {
-                alert("Acesso Restrito 🛡️\nGerentes possuem permissão exclusiva apenas para a Área de Promoções.");
-                window.location.replace('cadastro.html');
-                return;
-            }
-
-            // Expurga da tela os botões de Navegação que o gerente não pode usar
-            if (isManagerOnly) {
-                document.querySelectorAll('.master-only').forEach(el => el.style.display = 'none');
-            }
-
+            console.log("Portões Abertos! Administrador logado:", user.email);
             if (onAuthenticated) onAuthenticated(user);
         }
     });
 }
 
-// Rotinas EXCLUSIVAS da Página de Login em si
+// Rotinas da Página de Login
 if (window.location.pathname.includes('login.html')) {
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-        // Se a pessoa já estiver logada, expulsa ELA MESMA do login e manda pro painel
         onAuthStateChanged(auth, (user) => {
-            if (user) window.location.replace('adicionar.html');
+            if (user && isMaster(user)) {
+                window.location.replace('admin-panel.html');
+            } else if (user && !isMaster(user)) {
+                signOut(auth);
+            }
         });
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             const btn = document.getElementById('login-btn');
-            btn.innerText = "⏳ Avaliando credenciais...";
+            btn.innerText = "⏳ Logando...";
             btn.disabled = true;
 
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
 
             try {
-                // Efetua disparo ao Firebase Auth
                 await signInWithEmailAndPassword(auth, email, password);
-                // Ao dar certo, o ouvinte onAuthStateChanged acima será disparado sozinho e fará o replace
+                // onAuthStateChanged vai ser disparado aqui
             } catch (error) {
-                let errorMsg = "Erro de conexão.";
-                if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-                    errorMsg = "As chaves não batem (E-mail ou Senha incorretos).";
-                }
-                alert("❌ Fechadura travada: " + errorMsg);
+                alert("❌ Erro: E-mail ou Senha incorretos.");
                 btn.innerText = "🔓 Entrar no Sistema";
                 btn.disabled = false;
             }
@@ -80,7 +61,6 @@ if (window.location.pathname.includes('login.html')) {
     }
 }
 
-// Botao de Logout genérico
 export function attachLogoutHandler(btnElement) {
     if (!btnElement) return;
     btnElement.addEventListener('click', () => {

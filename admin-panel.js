@@ -2,15 +2,68 @@ import { db } from './firebase-config.js';
 import { doc, getDocs, collection, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
 import { requireAuth, attachLogoutHandler } from './auth.js';
 
-// Tranca a página
+// Transição de Segurança
 requireAuth((user) => {
     const btnLogout = document.getElementById('logout-btn');
     if (btnLogout) attachLogoutHandler(btnLogout);
+    loadPlaces(); // Carrega lojas na segunda aba
 });
 
-const form = document.getElementById('edit-form');
-const select = document.getElementById('edit-select');
+// === ABA: CRIAR LOJA ===
+const createForm = document.getElementById('create-form');
+createForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
+    const submitBtn = createForm.querySelector('button[type="submit"]');
+    submitBtn.innerText = "☁️ Sincronizando na Nuvem...";
+    submitBtn.disabled = true;
+
+    try {
+        const newId = Date.now();
+        const name = document.getElementById('new-name').value.trim().slice(0, 30);
+        const lat = parseFloat(document.getElementById('new-lat').value);
+        const lng = parseFloat(document.getElementById('new-lng').value);
+        const icon = (document.getElementById('new-icon').value || "").trim().slice(0, 120);
+        const website = (document.getElementById('new-site').value || "").trim().slice(0, 120);
+        let hoursText = document.getElementById('new-hours-text').value.trim().slice(0, 15);
+
+        if (!hoursText.includes("🕒")) hoursText = "🕒 " + hoursText;
+
+        const newEstablishmentData = {
+            id: newId,
+            name: name,
+            coords: [lat, lng],
+            icon: icon,
+            website: website,
+            hours: hoursText,
+            schedule: {
+                week: [parseInt(document.getElementById('week-open').value), parseInt(document.getElementById('week-close').value)],
+                sun: [parseInt(document.getElementById('sun-open').value), parseInt(document.getElementById('sun-close').value)]
+            },
+            status: "chill",
+            color: "#3498db",
+            offers: [] // Array Waze vazio para comunidade alimentar
+        };
+
+        await setDoc(doc(db, "establishments", String(newId)), newEstablishmentData, { merge: true });
+
+        alert(`🎉 SUCESSO!\nA loja "${name}" foi adicionada!`);
+        createForm.reset();
+        loadPlaces(); // Atualiza a aba de gerenciamento
+
+    } catch (err) {
+        console.error(err);
+        alert(`❌ Erro no provedor DB: ${err.message}`);
+    } finally {
+        submitBtn.innerText = "💾 Cadastrar Loja no Mapa";
+        submitBtn.disabled = false;
+    }
+});
+
+
+// === ABA: GERENCIAR LOJAS ===
+const editForm = document.getElementById('edit-form');
+const select = document.getElementById('edit-select');
 const btnSave = document.getElementById('btn-save');
 const btnDelete = document.getElementById('btn-delete');
 
@@ -22,7 +75,6 @@ const inputs = {
     lng: document.getElementById('edit-lng'),
     icon: document.getElementById('edit-icon'),
     site: document.getElementById('edit-site'),
-    ownerEmail: document.getElementById('edit-owner-email'),
     hoursText: document.getElementById('edit-hours-text'),
     weekOpen: document.getElementById('edit-week-open'),
     weekClose: document.getElementById('edit-week-close'),
@@ -36,7 +88,7 @@ function enableInputs() {
     btnDelete.disabled = false;
 }
 
-// 1. Busca todas as Lojas da Nuvem
+// 1. Busca Lojas
 async function loadPlaces() {
     try {
         const snapshot = await getDocs(collection(db, 'establishments'));
@@ -53,12 +105,12 @@ async function loadPlaces() {
             select.appendChild(option);
         });
     } catch (e) {
-        select.innerHTML = '<option value="" disabled selected>Erro ao carregar da nuvem (F5)</option>';
+        select.innerHTML = '<option value="" disabled selected>Erro ao carregar da nuvem</option>';
         console.error(e);
     }
 }
 
-// 2. Preenche os campos assim que selecionado
+// 2. Preenche os campos
 select.addEventListener('change', () => {
     const selectedId = select.value;
     const place = currentPlaces.find(p => String(p.id) === String(selectedId));
@@ -69,7 +121,6 @@ select.addEventListener('change', () => {
     inputs.lng.value = place.coords ? place.coords[1] : "";
     inputs.icon.value = place.icon || "";
     inputs.site.value = place.website || "";
-    inputs.ownerEmail.value = place.ownerEmail || "";
     inputs.hoursText.value = place.hours ? place.hours.replace("🕒", "").trim() : "";
 
     if (place.schedule) {
@@ -85,12 +136,12 @@ select.addEventListener('change', () => {
     enableInputs();
 });
 
-// 3. Salvar Edições de Sobrescrita Merge
-form.addEventListener('submit', async (e) => {
+// 3. Salvar Edição
+editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!select.value) return;
 
-    btnSave.innerText = "☁️ Sincronizando na Google Cloud...";
+    btnSave.innerText = "☁️ Salvando...";
     btnSave.disabled = true;
 
     try {
@@ -103,7 +154,6 @@ form.addEventListener('submit', async (e) => {
             coords: [parseFloat(inputs.lat.value), parseFloat(inputs.lng.value)],
             icon: inputs.icon.value.trim().slice(0, 120),
             website: inputs.site.value.trim().slice(0, 120),
-            ownerEmail: inputs.ownerEmail.value.trim(),
             hours: hoursText.trim().slice(0, 15),
             schedule: {
                 week: [parseInt(inputs.weekOpen.value), parseInt(inputs.weekClose.value)],
@@ -111,47 +161,42 @@ form.addEventListener('submit', async (e) => {
             }
         };
 
-        // Usa o flag Merge para não deletar Status e MSG do admin manager
         await setDoc(doc(db, "establishments", idStr), updatePayload, { merge: true });
 
-        alert("✅ Loja editada com Sucesso no Mapa Global!");
-        loadPlaces(); // Recarrega
-
-        form.reset();
+        alert("✅ Loja editada com Sucesso!");
+        loadPlaces();
+        
+        editForm.reset();
         Object.values(inputs).forEach(i => i.disabled = true);
         btnSave.disabled = true;
         btnDelete.disabled = true;
-        btnSave.innerText = "💾 Salvar Alterações Raiz";
+        btnSave.innerText = "💾 Salvar Alterações na Nuvem";
 
     } catch (err) {
-        alert("❌ Erro ao Salvar Edições: " + err.message);
+        alert("❌ Erro: " + err.message);
         btnSave.disabled = false;
-        btnSave.innerText = "💾 Salvar Alterações Raiz";
+        btnSave.innerText = "💾 Salvar Alterações na Nuvem";
     }
 });
 
-// 4. Protocolo de Deleção Máxima
+// 4. Deleção
 btnDelete.addEventListener('click', async () => {
     if (!select.value) return;
     const place = currentPlaces.find(p => String(p.id) === String(select.value));
 
-    // Dupla checagem de Segurança
-    const confirm1 = confirm(`CUIDADO: Deseja ATOMICAMENTE apagar a loja "${place.name}" de todos os celulares?`);
+    const confirm1 = confirm(`CUIDADO: Deseja apagar a loja "${place.name}"?`);
     if (!confirm1) return;
-    const confirm2 = prompt(`TERTEZA ABSOLUTA? Escreva a palavra "DELETAR" para confirmar a exclusão de ${place.name}:`);
-    if (confirm2 !== "DELETAR") {
-        alert("Operação cancelada para segurança.");
-        return;
-    }
+    const confirm2 = prompt(`TERTEZA? Escreva "DELETAR" para confirmar a exclusão de ${place.name}:`);
+    if (confirm2 !== "DELETAR") return;
 
-    btnDelete.innerText = "Apagando do mapa...";
+    btnDelete.innerText = "Apagando...";
     btnDelete.disabled = true;
 
     try {
         await deleteDoc(doc(db, "establishments", String(select.value)));
-        alert("💥 Loja pulverizada do Google!");
-        loadPlaces(); // Recarrega o array para sumir da lista
-        form.reset();
+        alert("💥 Loja pulverizada do mapa global!");
+        loadPlaces();
+        editForm.reset();
         Object.values(inputs).forEach(i => i.disabled = true);
         btnSave.disabled = true;
         btnDelete.disabled = true;
@@ -161,6 +206,3 @@ btnDelete.addEventListener('click', async () => {
         btnDelete.innerText = "🗑️ Excluir Loja Permanentemente";
     }
 });
-
-// Start Hook
-loadPlaces();

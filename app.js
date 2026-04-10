@@ -13,16 +13,31 @@ checkNotificationPermission();
 window.showPromo = (id) => {
     const place = globalEstablishments.find(p => p.id == id);
     if (!place) return;
-    showToast(`📢 <strong>${place.name}</strong><br>${place.msg || "Nenhuma promoção."}`);
+    showToast(`📢 <strong>${place.name}</strong><br>Abra o pino para conferir os achados da comunidade.`);
 };
 
-// HELPER: Validação dinâmica de prazo de validade
+// HELPER: Validação dinâmica por Volume Waze (Termômetro)
 function getActiveEstablishments() {
     return globalEstablishments.map(p => {
-        if (p.expiresAt && Date.now() > p.expiresAt && p.status !== 'chill') {
-            return { ...p, status: 'chill', msg: '', color: '#3498db' };
+        // Se a loja antiga não tiver o vetor, inicializamos
+        let validOffers = [];
+        if (p.offers) {
+            validOffers = p.offers.filter(o => o.expiresAt > Date.now());
         }
-        return p;
+        
+        let newStatus = 'chill';
+        let newColor = '#3498db';
+        
+        if (validOffers.length >= 5) { 
+            newStatus = 'fire'; 
+            newColor = 'red'; 
+        } else if (validOffers.length >= 1) { 
+            newStatus = 'live'; 
+            newColor = '#f39c12';
+        }
+
+        // Assina a nova estrutura visual
+        return { ...p, status: newStatus, color: newColor, offers: validOffers };
     });
 }
 
@@ -36,10 +51,13 @@ initializeDB(() => {
         (payload) => {
             renderMarkers(getActiveEstablishments(), currentUserPosition);
         },
-        // Callback de Push Nativo (Quando alguem do outro lado editar e chegar para a gente via WS)
+        // Callback de Push Nativo (Quando alguem do outro lado enviar alerta Waze e chegar para a gente via WS)
         (place) => {
-            if (place.expiresAt && Date.now() > place.expiresAt) return; // Bloqueia push fantasma se receber pacote ja vencido
-            triggerPushNotification(`Nova Oferta em ${place.name}!`, place.msg || "Confira o status!");
+            const valid = (place.offers || []).filter(o => o.expiresAt > Date.now());
+            if (valid.length >= 5) {
+                // Notifica pesadamente se bombou muito
+                triggerPushNotification(`🔥 BOMBARDIER Waze: ${place.name}!`, `A comunidade acabou de encontrar muitas ofertas lá, corra!`);
+            }
         }
     );
 });
@@ -58,7 +76,7 @@ initGPS(map,
                 const title = `📍 Você está perto: ${place.name}`;
                 showToast(title, () => focusOnPlace(place.coords));
                 
-                triggerPushNotification(title, `Apenas ${Math.round(dist)}m. ${place.msg || ""}`);
+                triggerPushNotification(title, `Apenas ${Math.round(dist)}m. Abra para ver as ofertas!`);
                 notifiedSet.add(place.id);
             }
         });
