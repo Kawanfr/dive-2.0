@@ -1,21 +1,16 @@
-const CACHE_NAME = 'dive-v51';
+const CACHE_NAME = 'dive-v52';
 const APP_SHELL = [
     './',
     './index.html',
-    './cadastro.html',
     './promocao.html',
-    './adicionar.html',
-    './editar.html',
-    './adicionar.js',
-    './editar.js',
+    './admin-panel.html',
+    './admin-panel.js',
     './style.css',
     './app.js',
     './map.js',
     './gps.js',
     './database.js',
     './notifications.js',
-    './firebase-config.js',
-    './admin.js',
     './manifest.json'
 ];
 
@@ -62,9 +57,9 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    // 2. Ignora requisições de WebSocket e Firestore
+    // 2. Ignora requisições de WebSocket
     // Evita loop no SWR bloqueando dados vitais
-    if (url.hostname.includes('firebase') || url.hostname.includes('firestore') || url.protocol === 'ws:' || url.protocol === 'wss:') {
+    if (url.protocol === 'ws:' || url.protocol === 'wss:') {
         return; 
     }
 

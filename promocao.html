@@ -98,7 +98,7 @@
             <input type="text" id="report-price" class="modal-input" placeholder="Preço (Ex: R$ 22,90)" maxlength="15">
             <div class="modal-btn-group">
                 <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
-                <button class="btn-submit" id="btn-submit-report">Enviar Alerta 🚀</button>
+                <button class="btn-submit" id="btn-submit-report" onclick="submitReport()">Enviar Alerta 🚀</button>
             </div>
         </div>
     </div>
@@ -113,23 +113,30 @@
     </div>
 
     <script type="module">
-        import { db } from './firebase-config.js';
-        import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
+        import { globalEstablishments, initializeDB, saveEstablishmentToLocal } from './database.js';
         
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
         let establishmentData = null;
+        
+        // Mock de Usuário para ambiente local (Gera um ID único por navegador)
+        let currentUserUid = localStorage.getItem('dive_uid');
+        if (!currentUserUid) {
+            currentUserUid = Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('dive_uid', currentUserUid);
+        }
 
         async function loadData() {
             if (!id) return;
-            const docRef = doc(db, "establishments", String(id));
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                establishmentData = docSnap.data();
-                renderPage();
-            } else {
-                document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:50px;'>Local não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
-            }
+            initializeDB(() => {
+                establishmentData = globalEstablishments.find(p => String(p.id) === String(id));
+                if (establishmentData) {
+                    if (!establishmentData.offers) establishmentData.offers = [];
+                    renderPage();
+                } else {
+                    document.body.innerHTML = "<h1 style='color:white;text-align:center;margin-top:50px;'>Local não encontrado.</h1><a href='index.html' style='display:block;text-align:center;color:white;'>Voltar</a>";
+                }
+            });
         }
 
         function renderPage() {
@@ -228,60 +235,61 @@
             }
         }
 
+        // Função Helper que "cutuca" o Termômetro do Documento Pai para o Mapa pulsar
+        function updateParentThermometer() {
+            const validCount = (establishmentData.offers || []).filter(o => o.expiresAt > Date.now()).length;
+            
+            let newStatus = validCount >= 5 ? 'fire' : (validCount >= 1 ? 'live' : 'chill');
+            let newColor = validCount >= 5 ? 'red' : (validCount >= 1 ? '#f1c40f' : '#3498db');
+            
+            establishmentData.status = newStatus;
+            establishmentData.color = newColor;
+        }
+
         // ====== LÓGICA DE AUDITORIA DO WAZE ======
-        window.voteOffer = async function(offerId, type) {
-            // Escudo Anti-Mutreta (Votar duas vezes na mesma oferta)
-            const voteKey = 'dive_voted_' + offerId;
-            if (localStorage.getItem(voteKey)) {
-                alert("Calma! Você já deixou seu voto para esta oferta.");
+        window.voteOffer = function(offerId, type) {
+            const offerIndex = establishmentData.offers.findIndex(o => String(o.id) === String(offerId));
+            if (offerIndex === -1) {
+                alert("Oferta não encontrada ou já expirada.");
                 return;
             }
             
-            try {
-                let currentOffers = establishmentData.offers || [];
-                let index = currentOffers.findIndex(o => String(o.id) === String(offerId));
-                if (index === -1) return;
+            let offer = establishmentData.offers[offerIndex];
+            offer.voters = offer.voters || [];
 
-                let offer = currentOffers[index];
-                if (type === 'up') offer.up = (offer.up || 0) + 1;
-                else if (type === 'down') offer.down = (offer.down || 0) + 1;
-
-                // Auditoria da Comunidade: Mais de 3 deslikes apaga da face da terra
-                let shouldReload = true;
-                if (offer.down >= 3) {
-                    currentOffers.splice(index, 1);
-                    alert("A comunidade decidiu: Essa oferta foi derrubada por falsidade ou expiração! 💥");
-                } else {
-                    // Sem alerta na votação comum para não encher o saco
-                    shouldReload = false;
-                }
-                
-                // Grava que o zé votou (Se der erro network, não grava)
-                localStorage.setItem(voteKey, "true");
-
-                // Atualiza Firestore
-                const docRef = doc(db, "establishments", String(id));
-                await updateDoc(docRef, { offers: currentOffers });
-                
-                if(shouldReload) window.location.reload();
-                else {
-                    // Atualiza suavemente a view local para evitar piscar toda a tela
-                    establishmentData.offers = currentOffers;
-                    renderPage();
-                }
-
-            } catch (err) {
-                console.error("Erro no voto", err);
-                localStorage.removeItem(voteKey); // Devolve o voto
+            if (offer.voters.includes(currentUserUid)) {
+                alert("Você já deixou seu voto para esta oferta!");
+                return;
             }
+
+            offer.voters.push(currentUserUid);
+
+            if (type === 'up') offer.up = (offer.up || 0) + 1;
+            else if (type === 'down') offer.down = (offer.down || 0) + 1;
+
+            if (offer.down >= 3) {
+                establishmentData.offers.splice(offerIndex, 1);
+                alert("A comunidade decidiu: Essa oferta foi derrubada por falsidade ou expiração! 💥");
+            }
+            
+            updateParentThermometer();
+            saveEstablishmentToLocal(establishmentData);
+            renderPage();
         };
 
-
         // ====== LÓGICA DE REPORT WAZE ======
-        document.getElementById('btn-submit-report').addEventListener('click', async () => {
-            if(!id) return;
+        window.submitReport = async function() {
+            console.log("Botão de reportar acionado!");
+            if(!id) {
+                alert("Erro: Loja não identificada na URL. Volte ao mapa e tente novamente.");
+                return;
+            }
+            if (!currentUserUid) {
+                alert("Conectando ao sistema de segurança. Aguarde um instante...");
+                return;
+            }
             
-            // ESCUDO ANTI SPAM (Fadiga de 60 segundos)
+            // Mantemos o localStorage apenas para fadiga amigável de interface UI (Cooldown)
             const lastPost = localStorage.getItem('dive_last_post');
             if (lastPost && (Date.now() - parseInt(lastPost)) < 60000) {
                 alert("🚨 Você está muito rápido! Por favor, aguarde 1 minuto para reportar outra oferta. Deixe um pouco para os outros!");
@@ -300,49 +308,34 @@
             btn.innerText = "Enviando... 🚀";
             btn.disabled = true;
 
-            try {
-                const newOffer = {
-                    id: Date.now(), // ID Universal
-                    product: product,
-                    price: price,
-                    up: 0,
-                    down: 0,
-                    expiresAt: Date.now() + (4 * 60 * 60 * 1000) // 4 horas de vida
-                };
+            const newOffer = {
+                id: Date.now(),
+                product: product,
+                price: price,
+                up: 0,
+                down: 0,
+                voters: [], 
+                authorUid: currentUserUid, 
+                expiresAt: Date.now() + (4 * 60 * 60 * 1000) 
+            };
 
-                const docRef = doc(db, "establishments", String(id));
-                
-                // Filtramos ativos e puxamos arrayLimpo
-                let currentOffers = establishmentData.offers || [];
-                const validOffers = currentOffers.filter(o => o.expiresAt > Date.now());
-                validOffers.push(newOffer);
-                const count = validOffers.length;
-                
-                // Calcula cor imediata Backend
-                let newStatus = 'chill';
-                let newColor = '#3498db';
-                if (count >= 5) { newStatus = 'fire'; newColor = 'red'; }
-                else if (count >= 1) { newStatus = 'live'; newColor = '#f1c40f'; }
+            establishmentData.offers = establishmentData.offers || [];
+            establishmentData.offers.push(newOffer);
 
-                await updateDoc(docRef, {
-                    offers: validOffers,
-                    status: newStatus,
-                    color: newColor,
-                    updatedAt: new Date().toISOString()
-                });
-
-                // Carimba no sistema local da pessoa para bloquear Flood
-                localStorage.setItem('dive_last_post', Date.now());
-
-                alert("🎉 Obrigado! O mapa global acaba de ser atualizado!");
-                window.location.reload();
-
-            } catch (err) {
-                alert("❌ Erro de conexão.");
-                btn.innerText = "Enviar Alerta 🚀";
-                btn.disabled = false;
-            }
-        });
+            updateParentThermometer();
+            saveEstablishmentToLocal(establishmentData);
+            
+            localStorage.setItem('dive_last_post', Date.now());
+            alert("🎉 Obrigado! O mapa global acaba de ser atualizado!");
+            
+            closeModal();
+            document.getElementById('report-product').value = '';
+            document.getElementById('report-price').value = '';
+            btn.innerText = "Enviar Alerta 🚀";
+            btn.disabled = false;
+            
+            renderPage();
+        };
 
         window.openModal = function() { document.getElementById('report-modal').style.display = 'flex'; }
         window.closeModal = function() { document.getElementById('report-modal').style.display = 'none'; }

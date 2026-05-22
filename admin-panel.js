@@ -1,13 +1,7 @@
-import { db } from './firebase-config.js';
-import { doc, getDocs, collection, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore.js";
-import { requireAuth, attachLogoutHandler } from './auth.js';
+import { globalEstablishments, saveEstablishmentToLocal, deleteEstablishmentFromLocal } from './database.js';
 
-// Transição de Segurança
-requireAuth((user) => {
-    const btnLogout = document.getElementById('logout-btn');
-    if (btnLogout) attachLogoutHandler(btnLogout);
-    loadPlaces(); // Carrega lojas na segunda aba
-});
+// Carrega lojas diretamente, sem autenticação
+loadPlaces();
 
 // === ABA: CRIAR LOJA ===
 const createForm = document.getElementById('create-form');
@@ -15,7 +9,7 @@ createForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const submitBtn = createForm.querySelector('button[type="submit"]');
-    submitBtn.innerText = "☁️ Sincronizando na Nuvem...";
+    submitBtn.innerText = "💾 Salvando Localmente...";
     submitBtn.disabled = true;
 
     try {
@@ -45,15 +39,14 @@ createForm.addEventListener('submit', async (e) => {
             offers: [] // Array Waze vazio para comunidade alimentar
         };
 
-        await setDoc(doc(db, "establishments", String(newId)), newEstablishmentData, { merge: true });
+        saveEstablishmentToLocal(newEstablishmentData);
 
         alert(`🎉 SUCESSO!\nA loja "${name}" foi adicionada!`);
         createForm.reset();
         loadPlaces(); // Atualiza a aba de gerenciamento
 
     } catch (err) {
-        console.error(err);
-        alert(`❌ Erro no provedor DB: ${err.message}`);
+        alert(`❌ Erro ao salvar: ${err.message}`);
     } finally {
         submitBtn.innerText = "💾 Cadastrar Loja no Mapa";
         submitBtn.disabled = false;
@@ -91,10 +84,7 @@ function enableInputs() {
 // 1. Busca Lojas
 async function loadPlaces() {
     try {
-        const snapshot = await getDocs(collection(db, 'establishments'));
-        currentPlaces = [];
-        snapshot.forEach(d => currentPlaces.push(d.data()));
-
+        currentPlaces = [...globalEstablishments];
         select.innerHTML = '<option value="" disabled selected>Escolha uma loja...</option>';
         currentPlaces.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
 
@@ -141,7 +131,7 @@ editForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!select.value) return;
 
-    btnSave.innerText = "☁️ Salvando...";
+    btnSave.innerText = "💾 Salvando...";
     btnSave.disabled = true;
 
     try {
@@ -161,7 +151,8 @@ editForm.addEventListener('submit', async (e) => {
             }
         };
 
-        await setDoc(doc(db, "establishments", idStr), updatePayload, { merge: true });
+        const place = currentPlaces.find(p => String(p.id) === idStr);
+        saveEstablishmentToLocal({ ...place, ...updatePayload });
 
         alert("✅ Loja editada com Sucesso!");
         loadPlaces();
@@ -170,12 +161,12 @@ editForm.addEventListener('submit', async (e) => {
         Object.values(inputs).forEach(i => i.disabled = true);
         btnSave.disabled = true;
         btnDelete.disabled = true;
-        btnSave.innerText = "💾 Salvar Alterações na Nuvem";
+        btnSave.innerText = "💾 Salvar Alterações";
 
     } catch (err) {
         alert("❌ Erro: " + err.message);
         btnSave.disabled = false;
-        btnSave.innerText = "💾 Salvar Alterações na Nuvem";
+        btnSave.innerText = "💾 Salvar Alterações";
     }
 });
 
@@ -193,7 +184,7 @@ btnDelete.addEventListener('click', async () => {
     btnDelete.disabled = true;
 
     try {
-        await deleteDoc(doc(db, "establishments", String(select.value)));
+        deleteEstablishmentFromLocal(select.value);
         alert("💥 Loja pulverizada do mapa global!");
         loadPlaces();
         editForm.reset();

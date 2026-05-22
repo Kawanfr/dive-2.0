@@ -45,7 +45,7 @@ function getActiveEstablishments() {
 // 2. Tenta iniciar / semear a NUVEM
 initializeDB(() => {
     
-    // 3. Em seguida, começa a ouvir as transações do WebSocket do Firebase
+    // 3. Em seguida, começa a ouvir as transações em tempo real do DB Local
     subscribeToEstablishments(
         // Callback para pintar interface
         (payload) => {

@@ -40,7 +40,6 @@
             <span>👑 <strong>Painel Master</strong></span>
             <div>
                 <a href="index.html" class="secondary-btn" style="text-decoration: none; padding: 8px 12px;">🗺️ Mapa</a>
-                <button id="logout-btn" class="secondary-btn" style="padding: 8px 12px; margin-left: 10px;">🚪 Sair</button>
             </div>
         </div>
 
@@ -97,7 +96,7 @@
             <div class="form-group">
                 <label>Selecione a Loja para Editar ou Excluir</label>
                 <select id="edit-select" class="auth-input">
-                    <option value="" disabled selected>Carregando lojas da nuvem...</option>
+                    <option value="" disabled selected>Carregando lojas...</option>
                 </select>
             </div>
             
@@ -138,14 +137,14 @@
                     <input type="number" id="edit-sun-close" class="auth-input" required disabled>
                 </div>
                 
-                <button type="submit" id="btn-save" class="primary-btn btn-panel" disabled>💾 Salvar Alterações na Nuvem</button>
+                <button type="submit" id="btn-save" class="primary-btn btn-panel" disabled>💾 Salvar Alterações</button>
                 <button type="button" id="btn-delete" class="btn-danger" disabled>🗑️ Excluir Loja Permanentemente</button>
             </form>
         </div>
 
     </div>
 
-    <!-- Firebase JS -->
+    <!-- Painel Admin JS -->
     <script type="module" src="admin-panel.js"></script>
 
     <script>
