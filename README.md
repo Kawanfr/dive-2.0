@@ -30,6 +30,6 @@ Criamos uma blindagem formidável, dado o fato que anônimos brincam com pacotes
 *   **`promocao.html`**: A página rainha das dinâmicas Waze. O berço de toda as injeções orgânicas da comunidade.
 
 ## 🔮 O Futuro de DIVE
-*   [ ] Pop-up Instalador Direto PWA (Para facilitar adoção na Tela Inicial dos Smartphones).
-*   [ ] Botão de Direcionamento Nativo (Waze de Rota) direto das ofertas.
+*   [x] Pop-up Instalador Direto PWA (Para facilitar adoção na Tela Inicial dos Smartphones).
+*   [x] Botão de Direcionamento Nativo (Waze de Rota) direto das ofertas.
 *   [ ] Algoritmos Avançados de Clustering quando cidades transbordarem para +10.000 mercados no mapa de uma vez.

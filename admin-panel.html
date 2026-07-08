@@ -43,11 +43,6 @@
             </div>
         </div>
 
-        <div class="tabs">
-            <button class="tab-btn active" data-tab="create">➕ Criar Loja</button>
-            <button class="tab-btn" data-tab="manage">⚙️ Gerenciar Lojas</button>
-        </div>
-
         <!-- ABA DE CRIAÇÃO -->
         <div id="create" class="tab-content active">
             <form id="create-form">
@@ -57,12 +52,12 @@
                 </div>
                 <div class="time-group">
                     <div class="form-group" style="flex:1;">
-                        <label>Latitude</label>
-                        <input type="number" step="any" id="new-lat" class="auth-input" required>
+                        <label>CEP</label>
+                        <input type="text" id="new-cep" class="auth-input" placeholder="Apenas números" maxlength="9" required>
                     </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Longitude</label>
-                        <input type="number" step="any" id="new-lng" class="auth-input" required>
+                    <div class="form-group" style="flex:2;">
+                        <label>Endereço Completo</label>
+                        <input type="text" id="new-address" class="auth-input" placeholder="Rua, Número, Bairro, Cidade - UF" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -91,73 +86,10 @@
             </form>
         </div>
 
-        <!-- ABA DE GERENCIAMENTO (EDIÇÃO/EXCLUSÃO) -->
-        <div id="manage" class="tab-content">
-            <div class="form-group">
-                <label>Selecione a Loja para Editar ou Excluir</label>
-                <select id="edit-select" class="auth-input">
-                    <option value="" disabled selected>Carregando lojas...</option>
-                </select>
-            </div>
-            
-            <form id="edit-form">
-                <div class="form-group">
-                    <label>Nome do Estabelecimento</label>
-                    <input type="text" id="edit-name" class="auth-input" required disabled>
-                </div>
-                <div class="time-group">
-                    <div class="form-group" style="flex:1;">
-                        <label>Latitude</label>
-                        <input type="number" step="any" id="edit-lat" class="auth-input" required disabled>
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                        <label>Longitude</label>
-                        <input type="number" step="any" id="edit-lng" class="auth-input" required disabled>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>URL do Ícone (Logo) - Opcional</label>
-                    <input type="url" id="edit-icon" class="auth-input" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Website oficial - Opcional</label>
-                    <input type="url" id="edit-site" class="auth-input" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Texto Livre de Horário</label>
-                    <input type="text" id="edit-hours-text" class="auth-input" required disabled>
-                </div>
-                <label style="color: #bdc3c7; font-size: 14px; margin-bottom: 5px; display: block;">Horário Lógico (Aberto/Fechado)</label>
-                <div class="time-group">
-                    <input type="number" id="edit-week-open" class="auth-input" required disabled>
-                    <input type="number" id="edit-week-close" class="auth-input" required disabled>
-                </div>
-                <div class="time-group">
-                    <input type="number" id="edit-sun-open" class="auth-input" required disabled>
-                    <input type="number" id="edit-sun-close" class="auth-input" required disabled>
-                </div>
-                
-                <button type="submit" id="btn-save" class="primary-btn btn-panel" disabled>💾 Salvar Alterações</button>
-                <button type="button" id="btn-delete" class="btn-danger" disabled>🗑️ Excluir Loja Permanentemente</button>
-            </form>
-        </div>
-
     </div>
 
     <!-- Painel Admin JS -->
     <script type="module" src="admin-panel.js"></script>
 
-    <script>
-        // Logica simples de Tabs HTML
-        document.querySelectorAll('.tab-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
-                btn.classList.add('active');
-                document.getElementById(btn.dataset.tab).classList.add('active');
-            });
-        });
-    </script>
 </body>
 </html>

@@ -62,7 +62,7 @@ const defaultPayload = [
     }
 ];
 
-export let globalEstablishments = []; // Estado global do mapa
+export const globalEstablishments = []; // Usando const para mutação segura (evita perda de referência)
 
 let listeners = [];
 
@@ -71,14 +71,18 @@ export async function initializeDB(onReady) {
     const localData = localStorage.getItem("dive_db");
     if (localData) {
         try {
-            globalEstablishments = JSON.parse(localData);
+            const data = JSON.parse(localData);
+            globalEstablishments.length = 0;
+            globalEstablishments.push(...data);
         } catch (e) {
             console.warn("JSON Corrompido detectado. Resetando database...", e);
-            globalEstablishments = [...defaultPayload];
+            globalEstablishments.length = 0;
+            globalEstablishments.push(...defaultPayload);
             localStorage.setItem("dive_db", JSON.stringify(globalEstablishments));
         }
     } else {
-        globalEstablishments = [...defaultPayload];
+        globalEstablishments.length = 0;
+        globalEstablishments.push(...defaultPayload);
         localStorage.setItem("dive_db", JSON.stringify(globalEstablishments));
     }
     if (onReady) onReady();
@@ -98,7 +102,9 @@ export function saveEstablishmentToLocal(place) {
 }
 
 export function deleteEstablishmentFromLocal(id) {
-    globalEstablishments = globalEstablishments.filter(p => String(p.id) !== String(id));
+    const filtered = globalEstablishments.filter(p => String(p.id) !== String(id));
+    globalEstablishments.length = 0;
+    globalEstablishments.push(...filtered);
     localStorage.setItem("dive_db", JSON.stringify(globalEstablishments));
     listeners.forEach(fn => fn(globalEstablishments));
 }
@@ -107,7 +113,9 @@ export function deleteEstablishmentFromLocal(id) {
 window.addEventListener('storage', (e) => {
     if (e.key === 'dive_db' && e.newValue) {
         try {
-            globalEstablishments = JSON.parse(e.newValue);
+            const data = JSON.parse(e.newValue);
+            globalEstablishments.length = 0;
+            globalEstablishments.push(...data);
             listeners.forEach(fn => fn(globalEstablishments));
         } catch(err) {
             console.error("Erro na sincronização entre abas", err);

@@ -1,13 +1,21 @@
 import { initializeDB, subscribeToEstablishments, globalEstablishments } from './database.js';
-import { initMap, renderMarkers, setCurrentFilter, setCurrentSearch, setCurrentRadius, map, focusOnPlace, currentFilter } from './map.js';
+import { initMap, renderMarkers, setCurrentFilter, setCurrentSearch, setCurrentRadius, map, focusOnPlace, currentFilter, markersLayer } from './map.js';
 import { initGPS, centerOnUser, currentUserPosition } from './gps.js';
 import { showToast, triggerPushNotification, checkNotificationPermission } from './notifications.js';
+import { initPwaInstaller } from './pwa-installer.js';
 
 console.log("DIVE 2.0: Main Bootloader Iniciado (Modulo Escalonado).");
+
+// --- CONSTANTES DE CONFIGURAÇÃO ---
+const PROXIMITY_ALERT_DISTANCE_METERS = 1500; // Distância para notificar que o usuário está perto
+const FIRE_STATUS_OFFER_THRESHOLD = 5;       // Nº de ofertas para um local ser "🔥 Agitado"
+const SEARCH_DEBOUNCE_MS = 300;              // Tempo de espera para executar a busca após digitação
+const SANITIZER_INTERVAL_MS = 60000;         // Intervalo para limpar ofertas expiradas da UI
 
 // 1. Inicializa dependências simples (Mapa estático e Verificador de Permissões)
 initMap('map');
 checkNotificationPermission();
+initPwaInstaller();
 
 // Export fallback window feature in case any HTML tries to use old logic
 window.showPromo = (id) => {
@@ -16,8 +24,8 @@ window.showPromo = (id) => {
     showToast(`📢 <strong>${place.name}</strong><br>Abra o pino para conferir os achados da comunidade.`);
 };
 
-// HELPER: Validação dinâmica por Volume Waze (Termômetro)
-function getActiveEstablishments() {
+// HELPER: Processa os estabelecimentos, calculando status e filtrando ofertas expiradas.
+function processEstablishments() {
     return globalEstablishments.map(p => {
         // Se a loja antiga não tiver o vetor, inicializamos
         let validOffers = [];
@@ -28,10 +36,10 @@ function getActiveEstablishments() {
         let newStatus = 'chill';
         let newColor = '#3498db';
         
-        if (validOffers.length >= 5) { 
+        if (validOffers.length >= FIRE_STATUS_OFFER_THRESHOLD) { 
             newStatus = 'fire'; 
             newColor = 'red'; 
-        } else if (validOffers.length >= 1) { 
+        } else if (validOffers.length > 0) { 
             newStatus = 'live'; 
             newColor = '#f39c12';
         }
@@ -41,20 +49,25 @@ function getActiveEstablishments() {
     });
 }
 
+// HELPER: Função centralizada para redesenhar os marcadores no mapa.
+function refreshMapMarkers() {
+    const processedEstablishments = processEstablishments();
+    renderMarkers(processedEstablishments, currentUserPosition);
+    return processedEstablishments; // Retorna os dados processados para quem precisar
+}
 
 // 2. Tenta iniciar / semear a NUVEM
 initializeDB(() => {
     
     // 3. Em seguida, começa a ouvir as transações em tempo real do DB Local
     subscribeToEstablishments(
-        // Callback para pintar interface
-        (payload) => {
-            renderMarkers(getActiveEstablishments(), currentUserPosition);
-        },
+        // Callback para pintar interface (onUpdated)
+        () => refreshMapMarkers(),
+
         // Callback de Push Nativo (Quando alguem do outro lado enviar alerta Waze e chegar para a gente via WS)
         (place) => {
             const valid = (place.offers || []).filter(o => o.expiresAt > Date.now());
-            if (valid.length >= 5) {
+            if (valid.length >= FIRE_STATUS_OFFER_THRESHOLD) {
                 // Notifica pesadamente se bombou muito
                 triggerPushNotification(`🔥 BOMBARDIER Waze: ${place.name}!`, `A comunidade acabou de encontrar muitas ofertas lá, corra!`);
             }
@@ -65,13 +78,13 @@ initializeDB(() => {
 // 4. Inicia Monitorador Logístico GPS (Escuta constante ligada junto com Renderizacao)
 initGPS(map, 
     // Quando a lat/lng alterar
-    () => { renderMarkers(getActiveEstablishments(), currentUserPosition); },
+    () => refreshMapMarkers(),
     // Quando um mercado bater com a distância e ainda nao foi notificado
     (userPos, notifiedSet) => {
-        getActiveEstablishments().forEach(place => {
+        processEstablishments().forEach(place => {
             if (place.status === 'chill') return; // Nao alerta proximidade de lojas frias de promoçao
             const dist = map.distance(userPos, place.coords);
-            if (dist <= 1500 && !notifiedSet.has(place.id)) {
+            if (dist <= PROXIMITY_ALERT_DISTANCE_METERS && !notifiedSet.has(place.id)) {
                 
                 const title = `📍 Você está perto: ${place.name}`;
                 showToast(title, () => focusOnPlace(place.coords));
@@ -91,7 +104,7 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
         setCurrentFilter(e.target.dataset.filter);
-        renderMarkers(getActiveEstablishments(), currentUserPosition);
+        refreshMapMarkers();
     });
 });
 
@@ -100,22 +113,40 @@ let searchTimeout;
 document.getElementById('search-input')?.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-        setCurrentSearch(e.target.value);
-        renderMarkers(getActiveEstablishments(), currentUserPosition);
-    }, 300);
+        const val = e.target.value;
+        setCurrentSearch(val);
+        refreshMapMarkers();
+        
+        // Auto-foco inteligente: Se o usuário buscar o nome de uma loja, voa até ela
+        if (val.trim().length >= 2 && markersLayer) {
+            const bounds = markersLayer.getBounds();
+            if (bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 16 });
+            }
+        }
+    }, SEARCH_DEBOUNCE_MS);
 });
 
 // Distância
 document.getElementById('radius-filter')?.addEventListener('change', (e) => {
     const val = e.target.value;
     setCurrentRadius(val === 'all' ? Infinity : parseInt(val));
-    renderMarkers(getActiveEstablishments(), currentUserPosition);
+    refreshMapMarkers();
 });
 
 // Relógio Saneador (Limpa promoções visuais em tempo real na tela mesmo se o usuário não mexer)
+let lastProcessedDataString = '';
 setInterval(() => {
-    renderMarkers(getActiveEstablishments(), currentUserPosition);
-}, 60000);
+    const processedData = processEstablishments();
+    const currentDataString = JSON.stringify(processedData.map(p => ({ id: p.id, offers: p.offers.length })));
+
+    // Só redesenha o mapa se o número de ofertas válidas mudou (expirou alguma)
+    if (currentDataString !== lastProcessedDataString) {
+        console.log("Sanitizer: Ofertas expiradas detectadas. Atualizando a interface.");
+        renderMarkers(processedData, currentUserPosition);
+        lastProcessedDataString = currentDataString;
+    }
+}, SANITIZER_INTERVAL_MS);
 
 // Centralizar GPS
 const centerBtn = document.getElementById('center-btn');
