@@ -1,10 +1,10 @@
-const CACHE_NAME = 'dive-v55';
+const CACHE_NAME = 'dive-v57';
 const APP_SHELL = [
     './',
     './index.html',
     './promocao.html',
     './admin-panel.html',
-    './admin-panel.js',
+    './editor.js',
     './style.css',
     './app.js',
     './map.js',

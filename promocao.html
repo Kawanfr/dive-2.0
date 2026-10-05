@@ -155,7 +155,16 @@
                 const now = new Date();
                 const day = now.getDay();
                 const hour = now.getHours();
-                let schedule = establishmentData.schedule.all ? establishmentData.schedule.all : (day === 0 ? establishmentData.schedule.sun : establishmentData.schedule.week);
+
+                const getScheduleForDay = (schedule, currentDay) => {
+                    if (!schedule) return null;
+                    if (schedule.all) return schedule.all;
+                    if (currentDay >= 1 && currentDay <= 5) return schedule.weekdays || schedule.week;
+                    if (currentDay === 6) return schedule.saturday || schedule.sat || schedule.week || schedule.weekdays;
+                    return schedule.sunday || schedule.sun || schedule.week || schedule.weekdays;
+                };
+
+                const schedule = getScheduleForDay(establishmentData.schedule, day);
                 const isOpen = (schedule && hour >= schedule[0] && hour < schedule[1]);
                 document.getElementById('promo-open-status').innerHTML = isOpen ? '<span class="badge-open">Aberto Agora</span>' : '<span class="badge-closed">Fechado</span>';
             }

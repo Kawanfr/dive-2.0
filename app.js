@@ -101,9 +101,15 @@ initGPS(map,
 // Filtros
 document.querySelectorAll('.filter-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.target.classList.add('active');
-        setCurrentFilter(e.target.dataset.filter);
+        const selected = e.currentTarget;
+
+        document.querySelectorAll('.filter-btn').forEach(b => {
+            const isSelected = b === selected;
+            b.classList.toggle('active', isSelected);
+            b.setAttribute('aria-pressed', String(isSelected));
+        });
+
+        setCurrentFilter(selected.dataset.filter);
         refreshMapMarkers();
     });
 });

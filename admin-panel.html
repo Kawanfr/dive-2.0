@@ -8,10 +8,24 @@
     <link rel="stylesheet" href="style.css">
     <style>
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: rgba(0,0,0,0.2); color: white; cursor: pointer; border-radius: 8px; font-weight: bold; }
-        .tab-btn.active { background: #3498db; }
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .tab-btn:hover { background: rgba(255,255,255,0.08); }
+        .tab-btn.active { background: #3498db; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.25); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
+        .schedule-tab-content { display: none; }
+        .schedule-tab-content.active { display: block; }
+        .schedule-grid { display: grid; gap: 12px; }
 
         .auth-container { max-width: 800px; margin: 40px auto; padding: 20px; background: #2c3e50; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .auth-container h2 { text-align: center; color: #fff; margin-bottom: 20px; }
@@ -26,6 +40,32 @@
         .btn-danger { background: #e74c3c; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
         .btn-danger:hover { background: #c0392b; }
         .btn-danger:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .list-panel { margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.12); }
+        .establishment-list { display: grid; gap: 12px; }
+        .establishment-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            background: rgba(0,0,0,0.15);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #ecf0f1;
+        }
+        .establishment-meta { flex: 1; }
+        .establishment-actions { display: flex; gap: 8px; }
+        .mini-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .mini-btn.edit { background: #3498db; color: white; }
+        .mini-btn.delete { background: #e74c3c; color: white; }
 
         .time-group { display: flex; gap: 10px; }
         .time-group .auth-input { width: 50%; }
@@ -46,6 +86,7 @@
         <!-- ABA DE CRIAÇÃO -->
         <div id="create" class="tab-content active">
             <form id="create-form">
+                <input type="hidden" id="editing-id" value="">
                 <div class="form-group">
                     <label>Nome do Estabelecimento</label>
                     <input type="text" id="new-name" class="auth-input" placeholder="Ex: Supermercado Assaí" required>
@@ -72,24 +113,50 @@
                     <label>Texto Livre de Horário</label>
                     <input type="text" id="new-hours-text" class="auth-input" placeholder="Seg-Sáb: 07:00 - 22:00..." required>
                 </div>
-                <label style="color: #bdc3c7; font-size: 14px; margin-bottom: 5px; display: block;">Horário Lógico (Aberto/Fechado)</label>
-                <div class="time-group">
-                    <input type="number" id="week-open" class="auth-input" placeholder="Seg-Sáb (Abre) Ex: 7" required>
-                    <input type="number" id="week-close" class="auth-input" placeholder="Seg-Sáb (Fecha) Ex: 22" required>
+                <label style="color: #bdc3c7; font-size: 14px; margin-bottom: 10px; display: block;">Horário Lógico (Aberto/Fechado)</label>
+
+                <div class="tabs" aria-label="Abas de horários" role="tablist">
+                    <button type="button" class="tab-btn active" data-tab="weekdays" role="tab" aria-selected="true">Seg. a Sex.</button>
+                    <button type="button" class="tab-btn" data-tab="saturday" role="tab" aria-selected="false">Sáb.</button>
+                    <button type="button" class="tab-btn" data-tab="sunday" role="tab" aria-selected="false">Dom.</button>
                 </div>
-                <div class="time-group">
-                    <input type="number" id="sun-open" class="auth-input" placeholder="Domi (Abre) Ex: 8" required>
-                    <input type="number" id="sun-close" class="auth-input" placeholder="Domi (Fecha) Ex: 18" required>
+
+                <div class="schedule-grid">
+                    <div class="schedule-tab-content active" id="tab-weekdays">
+                        <div class="time-group">
+                            <input type="number" id="weekday-open" class="auth-input" placeholder="Seg.-Sex. abre Ex: 7" min="0" max="23" required>
+                            <input type="number" id="weekday-close" class="auth-input" placeholder="Seg.-Sex. fecha Ex: 22" min="0" max="23" required>
+                        </div>
+                    </div>
+
+                    <div class="schedule-tab-content" id="tab-saturday">
+                        <div class="time-group">
+                            <input type="number" id="saturday-open" class="auth-input" placeholder="Sábado abre Ex: 8" min="0" max="23" required>
+                            <input type="number" id="saturday-close" class="auth-input" placeholder="Sábado fecha Ex: 18" min="0" max="23" required>
+                        </div>
+                    </div>
+
+                    <div class="schedule-tab-content" id="tab-sunday">
+                        <div class="time-group">
+                            <input type="number" id="sunday-open" class="auth-input" placeholder="Domingo abre Ex: 9" min="0" max="23" required>
+                            <input type="number" id="sunday-close" class="auth-input" placeholder="Domingo fecha Ex: 17" min="0" max="23" required>
+                        </div>
+                    </div>
                 </div>
                 
-                <button type="submit" class="primary-btn btn-panel">💾 Cadastrar Loja no Mapa</button>
+                <button type="submit" class="primary-btn btn-panel" id="submit-button">💾 Cadastrar Loja no Mapa</button>
             </form>
+
+            <div class="list-panel">
+                <h3 style="color: #fff; margin-bottom: 12px;">Estabelecimentos Cadastrados</h3>
+                <div id="establishments-list" class="establishment-list"></div>
+            </div>
         </div>
 
     </div>
 
     <!-- Painel Admin JS -->
-    <script type="module" src="admin-panel.js"></script>
+    <script type="module" src="editor.js"></script>
 
 </body>
 </html>

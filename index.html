@@ -2,8 +2,10 @@
 <html lang="pt-BR">
     <head>
          <meta charset="UTF-8">
-         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+         <meta name="viewport" content="width=device-width, initial-scale=1.0">
          <meta name="theme-color" content="#2c3e50">
+         <meta name="description" content="Mapa interativo do DIVE 2.0 com busca por locais, filtros e notificações em tempo real.">
+         <meta name="apple-mobile-web-app-capable" content="yes">
          <title>Dive 2.0</title>
 
          <!-- Leaflet CSS -->
@@ -24,33 +26,33 @@
 
         <body>
             <!-- Filtros Superiores -->
-            <div id="filter-container">
-                <input type="text" id="search-input" placeholder="🔍 Buscar local...">
-                <select id="radius-filter">
+            <div id="filter-container" aria-label="Filtros do mapa">
+                <input type="text" id="search-input" aria-label="Buscar local" placeholder="🔍 Buscar local...">
+                <select id="radius-filter" aria-label="Filtrar por raio">
                     <option value="all">🌐 Tudo</option>
                     <option value="1000">1 km</option>
                     <option value="3000">3 km</option>
                     <option value="5000">5 km</option>
                 </select>
-                <button class="filter-btn active" data-filter="all">Todos</button>
-                <button class="filter-btn" data-filter="agitado">🔥 Agitado</button>
-                <button class="filter-btn" data-filter="tranquilo">🧊 Tranquilo</button>
+                <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">Todos</button>
+                <button class="filter-btn" type="button" data-filter="agitado" aria-pressed="false">🔥 Agitado</button>
+                <button class="filter-btn" type="button" data-filter="tranquilo" aria-pressed="false">🧊 Tranquilo</button>
             </div>
 
             <!-- Container de Notificações Visuais -->
-            <div id="toast-container"></div>
+            <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
             <!-- Container do Mapa -->
-             <div id="map"></div>
+             <div id="map" aria-label="Mapa interativo"></div>
 
              <!-- Botão de Centralizar -->
-             <button id="center-btn">📍</button>
+             <button id="center-btn" type="button" aria-label="Centralizar mapa">📍</button>
 
              <!-- Botão de Ativar Notificações -->
-             <button id="notif-btn" class="hidden">🔕</button>
+             <button id="notif-btn" class="hidden" type="button" aria-label="Ativar notificações" aria-pressed="false">🔕</button>
 
         <!-- Botão de Instalação PWA -->
-        <button id="install-pwa-btn" class="hidden" aria-label="Instalar Aplicativo">📲 Instalar App</button>
+        <button id="install-pwa-btn" class="hidden" type="button" aria-label="Instalar aplicativo">📲 Instalar App</button>
 
              <!-- Leaflet JS -->
               <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"

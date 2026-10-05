@@ -1,72 +1,113 @@
 /* Reset básico */
 
-body, html {
+:root {
+    --bg-strong: #2c3e50;
+    --bg-soft: #f5f7fa;
+    --accent: #27ae60;
+    --danger: #e74c3c;
+    --purple: #8e44ad;
+    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.15);
+    --shadow-strong: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
-    overflow: hidden; /* Evita scrollbars indesejados no mobile */
+    overflow: hidden;
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg-soft);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input,
+select {
+    font: inherit;
 }
 
 /* Permite rolagem em páginas de conteúdo (Promoção, Cadastro) */
-body.scrollable, html.scrollable {
-    overflow-y: auto !important; /* Força a barra de rolagem vertical */
+body.scrollable,
+html.scrollable {
+    overflow-y: auto !important;
     overflow-x: hidden;
-    height: auto !important; /* Permite que o corpo cresça com o conteúdo */
+    height: auto !important;
 }
 
 /* O mapa deve ocupar tudo */
 #map {
     height: 100%;
     width: 100%;
-    background: #e5e5e5; /* Cor de fundo enquanto carrega os tiles */
+    background: #e5e5e5;
     z-index: 1;
 }
 
 /* Exemplo de estilo para controles personalizados futuros */
 .leaflet-bar {
-    box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.65);
     border-radius: 4px;
 }
 
 /* Botão Flutuante de Centralizar */
 #center-btn {
     position: absolute;
-    bottom: 90px; /* Aumentado para não ficar atrás da barra do navegador mobile */
-    right: 20px;
-    z-index: 999; /* Acima do mapa */
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    border: none;
-    background-color: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    font-size: 24px;
-    cursor: pointer;
-    transition: opacity 0.3s ease, transform 0.3s ease; /* Animação suave */
-}
-
-/* Classe para esconder o botão quando já estiver centralizado */
-#center-btn.hidden {
-    opacity: 0;
-    pointer-events: none; /* Evita cliques acidentais quando invisível */
-    transform: translateY(20px); /* Desce um pouco ao sumir */
-}
-
-/* Botão de Notificação (Sino) */
-#notif-btn {
-    position: absolute;
-    bottom: 150px; /* Acima do botão de centralizar */
+    bottom: 90px;
     right: 20px;
     z-index: 999;
     width: 50px;
     height: 50px;
     border-radius: 50%;
     border: none;
-    background-color: #e74c3c; /* Vermelho para chamar atenção */
+    background-color: white;
+    box-shadow: var(--shadow-soft);
+    font-size: 24px;
+    cursor: pointer;
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.2s ease;
+}
+
+#center-btn:hover,
+#notif-btn:hover,
+#install-pwa-btn:hover,
+.filter-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+#center-btn:focus-visible,
+#notif-btn:focus-visible,
+#install-pwa-btn:focus-visible,
+#search-input:focus-visible,
+#radius-filter:focus-visible,
+.filter-btn:focus-visible {
+    outline: 3px solid rgba(44, 62, 80, 0.25);
+    outline-offset: 2px;
+}
+
+#center-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(20px);
+}
+
+/* Botão de Notificação (Sino) */
+#notif-btn {
+    position: absolute;
+    bottom: 150px;
+    right: 20px;
+    z-index: 999;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: none;
+    background-color: var(--danger);
     color: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-soft);
     font-size: 24px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -75,18 +116,18 @@ body.scrollable, html.scrollable {
 /* Botão de Instalação PWA */
 #install-pwa-btn {
     position: absolute;
-    bottom: 210px; /* Acima dos outros botões */
+    bottom: 210px;
     right: 20px;
     z-index: 999;
     padding: 0 16px;
     height: 50px;
     border-radius: 25px;
     border: none;
-    background-color: #8e44ad; /* Roxo para destaque */
+    background-color: var(--purple);
     color: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.3s ease;
 }
@@ -106,30 +147,43 @@ body.scrollable, html.scrollable {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+    align-items: center;
     gap: 10px;
-    background-color: rgba(255, 255, 255, 0.9);
-    padding: 5px;
-    max-width: 95%; /* Evita que vase a tela */
+    background-color: rgba(255, 255, 255, 0.92);
+    padding: 8px 10px;
+    max-width: min(95vw, 680px);
     border-radius: 25px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(6px);
 }
 
-/* Campo de Busca */
+#search-input,
+#radius-filter,
+.filter-btn {
+    min-height: 38px;
+}
+
 #search-input {
     padding: 8px 12px;
     border-radius: 20px;
-    border: 1px solid #ccc;
+    border: 1px solid #d9dfe7;
     font-size: 14px;
     outline: none;
-    width: 140px; /* Tamanho inicial compacto */
-    transition: width 0.3s ease;
+    width: 150px;
+    transition: width 0.3s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    background: white;
 }
 
-/* Filtro de Raio (Select) */
+#search-input:focus {
+    width: min(48vw, 180px);
+    border-color: rgba(44, 62, 80, 0.5);
+    box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.08);
+}
+
 #radius-filter {
     padding: 8px 12px;
     border-radius: 20px;
-    border: 1px solid #ccc;
+    border: 1px solid #d9dfe7;
     font-size: 14px;
     outline: none;
     background-color: white;
@@ -145,11 +199,16 @@ body.scrollable, html.scrollable {
     font-weight: 600;
     color: #555;
     cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
 .filter-btn.active {
-    background-color: #2c3e50;
+    background-color: var(--bg-strong);
     color: white;
+}
+
+.filter-btn:active {
+    transform: translateY(1px);
 }
 
 /* --- Estilização do Popup (Card Moderno) --- */
@@ -158,27 +217,26 @@ body.scrollable, html.scrollable {
 .leaflet-popup-content-wrapper {
     border-radius: 12px;
     padding: 0;
-    overflow: hidden; /* Garante que o header não vaze as bordas arredondadas */
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    overflow: hidden;
+    box-shadow: var(--shadow-strong);
 }
 
 .leaflet-popup-content {
     margin: 0;
-    width: 220px !important; /* Largura fixa ideal para mobile */
+    width: 220px !important;
 }
 
-/* Estilo do nosso conteúdo interno */
 .popup-card {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 .popup-header {
-    background-color: #2c3e50; /* Mesma cor do tema */
+    background-color: var(--bg-strong);
     color: white;
     padding: 12px 15px;
     font-weight: 600;
     font-size: 14px;
-    position: relative; /* Mantém o link ancorado no topo */
+    position: relative;
 }
 
 .popup-body {
@@ -192,13 +250,13 @@ body.scrollable, html.scrollable {
     margin-top: 8px;
     font-size: 12px;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--bg-strong);
 }
 
 .popup-btn {
     display: block;
     margin-top: 10px;
-    background-color: #27ae60; /* Verde */
+    background-color: var(--accent);
     color: white;
     text-align: center;
     padding: 8px;
@@ -207,57 +265,103 @@ body.scrollable, html.scrollable {
     font-weight: bold;
 }
 
-/* Link do site no canto superior direito do Popup */
 .popup-website-link {
     position: absolute;
     top: 10px;
-    right: 35px; /* Deixa um espaço para não encostar no botão 'X' de fechar do Leaflet */
+    right: 35px;
     font-size: 16px;
     text-decoration: none;
     transition: opacity 0.2s;
 }
 
-/* Prévia do site no Mapa (Popup) */
 .popup-website-preview {
     position: absolute;
-    top: 38px; /* Logo abaixo do link 🌐 */
-    right: 15px; /* Alinhado à direita */
+    top: 38px;
+    right: 15px;
     width: 80px;
     height: 55px;
     border-radius: 4px;
     border: 2px solid white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     overflow: hidden;
     z-index: 10;
     background: #fff;
     transition: transform 0.2s;
 }
+
 .popup-website-preview img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
+
 .popup-website-preview:hover {
-    transform: scale(2.2); /* Zoom gigante para leitura */
-    transform-origin: top right; /* Garante que cresça para dentro da tela, não vazando a borda */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    transform: scale(2.2);
+    transform-origin: top right;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
 }
 
-/* Botão de Promoções (Destaque) */
 .promo-btn {
-    background-color: #8e44ad; /* Roxo */
+    background-color: var(--purple);
     border: none;
-    width: 100%; /* Ocupa largura total */
+    width: 100%;
     cursor: pointer;
 }
 
-/* Ajuste do botão de fechar para ficar branco sobre o header escuro */
 .leaflet-container a.leaflet-popup-close-button {
     color: white;
     font-size: 18px;
     top: 8px;
     right: 8px;
 }
+
+@media (max-width: 640px) {
+    #filter-container {
+        top: 12px;
+        width: calc(100vw - 24px);
+        padding: 6px;
+        gap: 6px;
+    }
+
+    #search-input {
+        flex: 1 1 120px;
+        width: min(48vw, 180px);
+    }
+
+    #radius-filter {
+        flex: 1 1 110px;
+    }
+
+    .filter-btn {
+        flex: 1 1 auto;
+        padding: 8px 10px;
+        font-size: 12px;
+    }
+
+    #center-btn,
+    #notif-btn {
+        width: 46px;
+        height: 46px;
+        right: 16px;
+    }
+
+    #center-btn {
+        bottom: 84px;
+    }
+
+    #notif-btn {
+        bottom: 142px;
+    }
+
+    #install-pwa-btn {
+        right: 16px;
+        bottom: 200px;
+        height: 46px;
+        font-size: 14px;
+        padding: 0 14px;
+    }
+}
+
 
 /* --- Animações dos Marcadores --- */
 
