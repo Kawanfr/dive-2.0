@@ -113,7 +113,7 @@
     </div>
 
     <script type="module">
-        import { globalEstablishments, initializeDB, saveEstablishmentToLocal } from './database.js';
+        import { globalEstablishments, initializeDB, saveEstablishmentToLocal, getSafeHttpUrl } from './database.js';
         
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
@@ -128,7 +128,7 @@
 
         async function loadData() {
             if (!id) return;
-            initializeDB(() => {
+            await initializeDB(() => {
                 establishmentData = globalEstablishments.find(p => String(p.id) === String(id));
                 if (establishmentData) {
                     if (!establishmentData.offers) establishmentData.offers = [];
@@ -147,7 +147,7 @@
             const validOffers = establishmentData.offers.filter(o => o.expiresAt > nowTime);
 
             document.getElementById('promo-title').innerText = establishmentData.name;
-            document.getElementById('promo-logo').src = establishmentData.icon || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
+            document.getElementById('promo-logo').src = getSafeHttpUrl(establishmentData.icon) || 'https://cdn-icons-png.flaticon.com/512/854/854878.png';
             if (establishmentData.hours) document.getElementById('promo-hours').innerText = establishmentData.hours;
 
             // Horários
@@ -231,40 +231,50 @@
 
             document.getElementById('btn-maps').href = `https://www.google.com/maps/dir/?api=1&destination=${establishmentData.coords[0]},${establishmentData.coords[1]}`;
             
-            if (establishmentData.website) {
+            const websiteUrl = getSafeHttpUrl(establishmentData.website);
+            if (websiteUrl) {
                 const siteBtn = document.getElementById('promo-website-btn');
-                siteBtn.innerHTML = `🌐 ${establishmentData.name.split(' ')[0]}`;
+                siteBtn.textContent = `🌐 ${establishmentData.name.split(' ')[0]}`;
                 siteBtn.classList.remove('hidden');
                 siteBtn.onclick = (e) => {
                     e.preventDefault();
                     document.getElementById('iframe-title').innerText = establishmentData.name;
-                    document.getElementById('promo-iframe').src = establishmentData.website;
+                    document.getElementById('promo-iframe').src = websiteUrl;
                     document.getElementById('iframe-overlay').classList.remove('hidden');
                 };
+            } else {
+                document.getElementById('promo-website-btn').classList.add('hidden');
             }
         }
 
         // Função Helper que "cutuca" o Termômetro do Documento Pai para o Mapa pulsar
-        function updateParentThermometer() {
-            const validCount = (establishmentData.offers || []).filter(o => o.expiresAt > Date.now()).length;
+        function updateParentThermometer(place = establishmentData) {
+            const validCount = (place.offers || []).filter(o => o.expiresAt > Date.now()).length;
             
             let newStatus = validCount >= 5 ? 'fire' : (validCount >= 1 ? 'live' : 'chill');
             let newColor = validCount >= 5 ? 'red' : (validCount >= 1 ? '#f1c40f' : '#3498db');
             
-            establishmentData.status = newStatus;
-            establishmentData.color = newColor;
+            place.status = newStatus;
+            place.color = newColor;
         }
 
         // ====== LÓGICA DE AUDITORIA DO WAZE ======
         window.voteOffer = function(offerId, type) {
-            const offerIndex = establishmentData.offers.findIndex(o => String(o.id) === String(offerId));
+            if (type !== 'up' && type !== 'down') return;
+            const updatedPlace = {
+                ...establishmentData,
+                offers: (establishmentData.offers || []).map(offer => ({
+                    ...offer,
+                    voters: [...(offer.voters || [])]
+                }))
+            };
+            const offerIndex = updatedPlace.offers.findIndex(o => String(o.id) === String(offerId));
             if (offerIndex === -1) {
                 alert("Oferta não encontrada ou já expirada.");
                 return;
             }
             
-            let offer = establishmentData.offers[offerIndex];
-            offer.voters = offer.voters || [];
+            const offer = updatedPlace.offers[offerIndex];
 
             if (offer.voters.includes(currentUserUid)) {
                 alert("Você já deixou seu voto para esta oferta!");
@@ -277,13 +287,19 @@
             else if (type === 'down') offer.down = (offer.down || 0) + 1;
 
             if (offer.down >= 3) {
-                establishmentData.offers.splice(offerIndex, 1);
+                updatedPlace.offers.splice(offerIndex, 1);
                 alert("A comunidade decidiu: Essa oferta foi derrubada por falsidade ou expiração! 💥");
             }
             
-            updateParentThermometer();
-            saveEstablishmentToLocal(establishmentData);
-            renderPage();
+            try {
+                updateParentThermometer(updatedPlace);
+                saveEstablishmentToLocal(updatedPlace);
+                establishmentData = updatedPlace;
+                renderPage();
+            } catch (error) {
+                console.error("Erro ao salvar voto da oferta:", error);
+                alert(error instanceof Error ? error.message : String(error));
+            }
         };
 
         // ====== LÓGICA DE REPORT WAZE ======
@@ -298,13 +314,6 @@
                 return;
             }
             
-            // Mantemos o localStorage apenas para fadiga amigável de interface UI (Cooldown)
-            const lastPost = localStorage.getItem('dive_last_post');
-            if (lastPost && (Date.now() - parseInt(lastPost)) < 60000) {
-                alert("🚨 Você está muito rápido! Por favor, aguarde 1 minuto para reportar outra oferta. Deixe um pouco para os outros!");
-                return;
-            }
-
             const product = document.getElementById('report-product').value.trim().slice(0, 50);
             const price = document.getElementById('report-price').value.trim().slice(0, 15);
             
@@ -317,33 +326,53 @@
             btn.innerText = "Enviando... 🚀";
             btn.disabled = true;
 
-            const newOffer = {
-                id: Date.now(),
-                product: product,
-                price: price,
-                up: 0,
-                down: 0,
-                voters: [], 
-                authorUid: currentUserUid, 
-                expiresAt: Date.now() + (4 * 60 * 60 * 1000) 
-            };
+            try {
+                const lastPost = localStorage.getItem('dive_last_post');
+                if (lastPost && (Date.now() - parseInt(lastPost, 10)) < 60000) {
+                    alert("🚨 Você está muito rápido! Aguarde 1 minuto antes de enviar outra oferta.");
+                    return;
+                }
 
-            establishmentData.offers = establishmentData.offers || [];
-            establishmentData.offers.push(newOffer);
+                const now = Date.now();
+                const newOffer = {
+                    id: now,
+                    product,
+                    price,
+                    up: 0,
+                    down: 0,
+                    voters: [],
+                    authorUid: currentUserUid,
+                    expiresAt: now + (4 * 60 * 60 * 1000)
+                };
+                const updatedPlace = {
+                    ...establishmentData,
+                    offers: [...(establishmentData.offers || []), newOffer]
+                };
 
-            updateParentThermometer();
-            saveEstablishmentToLocal(establishmentData);
-            
-            localStorage.setItem('dive_last_post', Date.now());
-            alert("🎉 Obrigado! O mapa global acaba de ser atualizado!");
-            
-            closeModal();
-            document.getElementById('report-product').value = '';
-            document.getElementById('report-price').value = '';
-            btn.innerText = "Enviar Alerta 🚀";
-            btn.disabled = false;
-            
-            renderPage();
+                updateParentThermometer(updatedPlace);
+                saveEstablishmentToLocal(updatedPlace);
+                establishmentData = updatedPlace;
+
+                let cooldownWarning = '';
+                try {
+                    localStorage.setItem('dive_last_post', String(now));
+                } catch (error) {
+                    console.error("Oferta salva, mas não foi possível registrar o intervalo de envio.", error);
+                    cooldownWarning = "\nNão foi possível registrar o intervalo de envio neste navegador.";
+                }
+                alert(`🎉 Obrigado! A oferta foi salva neste navegador.${cooldownWarning}`);
+
+                closeModal();
+                document.getElementById('report-product').value = '';
+                document.getElementById('report-price').value = '';
+                renderPage();
+            } catch (error) {
+                console.error("Erro ao salvar a oferta:", error);
+                alert(error instanceof Error ? error.message : String(error));
+            } finally {
+                btn.innerText = "Enviar Alerta 🚀";
+                btn.disabled = false;
+            }
         };
 
         window.openModal = function() { document.getElementById('report-modal').style.display = 'flex'; }
@@ -360,7 +389,10 @@
             document.getElementById('promo-iframe').src = "";
         }
 
-        loadData();
+        loadData().catch((error) => {
+            console.error("DIVE: falha ao carregar os dados locais da loja.", error);
+            alert(error instanceof Error ? error.message : String(error));
+        });
     </script>
 </body>
 </html>

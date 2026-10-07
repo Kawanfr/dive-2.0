@@ -1,4 +1,4 @@
-import { globalEstablishments, saveEstablishmentToLocal, deleteEstablishmentFromLocal, initializeDB } from './database.js';
+import { globalEstablishments, saveEstablishmentToLocal, deleteEstablishmentFromLocal, initializeDB, getSafeHttpUrl } from './database.js';
 
 // Objeto que encapsula toda a lógica do painel de forma isolada
 const AdminApp = {
@@ -14,6 +14,8 @@ const AdminApp = {
         this.addressInput = document.getElementById('new-address');
         this.editingIdInput = document.getElementById('editing-id');
         this.submitButton = document.getElementById('submit-button');
+        this.cepGroup = this.cepInput.closest('.form-group');
+        this.addressGroup = this.addressInput.closest('.form-group');
         this.establishmentList = document.getElementById('establishments-list');
         this.tabButtons = document.querySelectorAll('.tab-btn');
         this.tabContents = document.querySelectorAll('.schedule-tab-content');
@@ -64,6 +66,10 @@ const AdminApp = {
     clearEditingState() {
         this.editingIdInput.value = '';
         this.submitButton.textContent = '💾 Cadastrar Loja no Mapa';
+        this.cepInput.required = true;
+        this.addressInput.required = true;
+        this.cepGroup.classList.remove('hidden');
+        this.addressGroup.classList.remove('hidden');
     },
 
     getScheduleValues(collection) {
@@ -85,6 +91,12 @@ const AdminApp = {
         document.getElementById('new-hours-text').value = hours.replace(/^🕒\s*/, '');
         this.editingIdInput.value = place.id;
         this.submitButton.textContent = '💾 Salvar Alterações';
+        this.cepInput.value = '';
+        this.addressInput.value = '';
+        this.cepInput.required = false;
+        this.addressInput.required = false;
+        this.cepGroup.classList.add('hidden');
+        this.addressGroup.classList.add('hidden');
 
         const schedule = place.schedule || {};
         const weekdaySchedule = this.getScheduleValues(schedule.weekdays || schedule.week || [0, 0]);
@@ -110,16 +122,27 @@ const AdminApp = {
         globalEstablishments.forEach((place) => {
             const item = document.createElement('div');
             item.className = 'establishment-item';
-            item.innerHTML = `
-                <div class="establishment-meta">
-                    <strong>${place.name}</strong><br>
-                    <small>${place.hours || 'Sem horário informado'}</small>
-                </div>
-                <div class="establishment-actions">
-                    <button type="button" class="mini-btn edit" data-action="edit" data-id="${place.id}">Editar</button>
-                    <button type="button" class="mini-btn delete" data-action="delete" data-id="${place.id}">Excluir</button>
-                </div>
-            `;
+            const meta = document.createElement('div');
+            meta.className = 'establishment-meta';
+            const name = document.createElement('strong');
+            name.textContent = place.name;
+            const hours = document.createElement('small');
+            hours.textContent = place.hours || 'Sem horário informado';
+            meta.append(name, document.createElement('br'), hours);
+
+            const actions = document.createElement('div');
+            actions.className = 'establishment-actions';
+            ['edit', 'delete'].forEach((action) => {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `mini-btn ${action}`;
+                button.dataset.action = action;
+                button.dataset.id = String(place.id);
+                button.textContent = action === 'edit' ? 'Editar' : 'Excluir';
+                actions.appendChild(button);
+            });
+
+            item.append(meta, actions);
             this.establishmentList.appendChild(item);
         });
     },
@@ -139,7 +162,13 @@ const AdminApp = {
         const confirmed = window.confirm(`Excluir "${place.name}" do mapa?`);
         if (!confirmed) return;
 
-        deleteEstablishmentFromLocal(id);
+        try {
+            deleteEstablishmentFromLocal(id);
+        } catch (error) {
+            console.error("Erro ao excluir estabelecimento:", error);
+            alert(error instanceof Error ? error.message : String(error));
+            return;
+        }
         this.renderEstablishmentList();
 
         if (String(this.editingIdInput.value) === String(id)) {
@@ -185,6 +214,7 @@ const AdminApp = {
         try {
             this.addressInput.placeholder = "Buscando endereço...";
             const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            if (!res.ok) throw new Error(`A consulta de CEP respondeu com status ${res.status}.`);
             const data = await res.json();
             
             if (data.erro) {
@@ -201,47 +231,61 @@ const AdminApp = {
             this.addressInput.setSelectionRange(numPos, numPos + 6);
         } catch (e) {
             console.error("Erro ViaCEP:", e);
+            this.addressInput.placeholder = "Rua, Número, Bairro, Cidade - UF";
+            alert("Não foi possível consultar o CEP. Confira sua conexão ou preencha o endereço manualmente.");
         }
     },
 
     async handleCreate(e) {
         e.preventDefault();
-        const btn = this.createForm.querySelector('button[type="submit"]');
+        const btn = this.submitButton;
         btn.disabled = true;
         btn.innerText = "🌍 Convertendo Endereço e Cadastrando...";
 
         try {
-            const addressStr = this.addressInput.value.trim();
-            
-            // Impede que o endereço seja enviado com a palavra "Número" genérica
-            if (addressStr.toLowerCase().includes("número") || addressStr.toLowerCase().includes("numero")) {
-                throw new Error("Você esqueceu de preencher o número! Por favor, substitua a palavra 'Número' pelo número exato da rua.");
-            }
-            
-            // Consulta a API de satélite OpenStreetMap (Nominatim) para achar Coordenadas Reais do Endereço
-            const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&countrycodes=br&limit=1`);
-            const geoData = await geoRes.json();
+            const editingId = this.editingIdInput.value;
+            const existing = editingId
+                ? globalEstablishments.find((item) => String(item.id) === String(editingId))
+                : null;
+            if (editingId && !existing) throw new Error("O estabelecimento selecionado não foi encontrado. Atualize a lista e tente novamente.");
 
-            if (!geoData || geoData.length === 0) {
-                throw new Error("Não conseguimos achar as coordenadas (Lat/Lng) com base nesse endereço. Tente conferir o nome da rua ou número e salve novamente.");
-            }
+            let coords = existing?.coords;
+            if (!coords) {
+                const addressStr = this.addressInput.value.trim();
+                if (addressStr.toLowerCase().includes("número") || addressStr.toLowerCase().includes("numero")) {
+                    throw new Error("Você esqueceu de preencher o número! Substitua a palavra 'Número' pelo número exato da rua.");
+                }
 
-            const lat = parseFloat(geoData[0].lat);
-            const lng = parseFloat(geoData[0].lon);
+                const geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressStr)}&countrycodes=br&limit=1`);
+                if (!geoRes.ok) throw new Error(`A consulta de endereço respondeu com status ${geoRes.status}.`);
+                const geoData = await geoRes.json();
+                if (!geoData?.length) {
+                    throw new Error("Não encontramos as coordenadas desse endereço. Confira o endereço e tente novamente.");
+                }
+
+                coords = [parseFloat(geoData[0].lat), parseFloat(geoData[0].lon)];
+                if (!coords.every(Number.isFinite)) {
+                    throw new Error("O serviço de endereço retornou coordenadas inválidas.");
+                }
+            }
 
             let hoursText = document.getElementById('new-hours-text').value.trim();
             if (!hoursText.includes("🕒")) hoursText = "🕒 " + hoursText;
 
             const scheduleValues = this.readScheduleValues();
-
-            const editingId = this.editingIdInput.value ? Number(this.editingIdInput.value) : Date.now();
+            const iconValue = document.getElementById('new-icon').value.trim();
+            const websiteValue = document.getElementById('new-site').value.trim();
+            const icon = getSafeHttpUrl(iconValue);
+            const website = getSafeHttpUrl(websiteValue);
+            if (iconValue && !icon) throw new Error("A URL do ícone precisa começar com http:// ou https://.");
+            if (websiteValue && !website) throw new Error("A URL do site precisa começar com http:// ou https://.");
 
             const newPlace = {
-                id: editingId,
+                id: existing ? existing.id : Date.now(),
                 name: document.getElementById('new-name').value.trim(),
-                coords: [lat, lng],
-                icon: document.getElementById('new-icon').value.trim(),
-                website: document.getElementById('new-site').value.trim(),
+                coords,
+                icon,
+                website,
                 hours: hoursText,
                 schedule: {
                     weekdays: scheduleValues.weekdays,
@@ -256,14 +300,10 @@ const AdminApp = {
                 offers: [] // Array Waze zerado
             };
 
-            if (this.editingIdInput.value) {
-                const existing = globalEstablishments.find((item) => String(item.id) === String(editingId));
-                if (existing) {
-                    newPlace.coords = existing.coords || [lat, lng];
-                    newPlace.offers = existing.offers || [];
-                    newPlace.status = existing.status || 'chill';
-                    newPlace.color = existing.color || '#3498db';
-                }
+            if (existing) {
+                newPlace.offers = existing.offers || [];
+                newPlace.status = existing.status || 'chill';
+                newPlace.color = existing.color || '#3498db';
             }
 
             saveEstablishmentToLocal(newPlace);
@@ -281,10 +321,12 @@ const AdminApp = {
             }
             
         } catch (err) {
-            alert("❌ Erro fatal ao criar: " + err.message);
+            console.error("Erro ao salvar estabelecimento:", err);
+            const message = err instanceof Error ? err.message : String(err);
+            alert("Não foi possível salvar o estabelecimento: " + message);
         } finally {
             btn.disabled = false;
-            btn.innerText = "💾 Cadastrar Loja no Mapa";
+            btn.innerText = this.editingIdInput.value ? '💾 Salvar Alterações' : '💾 Cadastrar Loja no Mapa';
         }
     }
 };
@@ -299,4 +341,7 @@ initializeDB(() => {
         alert("❌ Erro Fatal no Painel: " + err.message);
         console.error("DIVE Admin Error:", err);
     }
+}).catch((error) => {
+    console.error("DIVE Admin: falha ao carregar os dados locais.", error);
+    alert(error instanceof Error ? error.message : String(error));
 });

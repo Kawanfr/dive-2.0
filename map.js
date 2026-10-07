@@ -1,3 +1,5 @@
+import { getSafeHttpUrl } from './database.js';
+
 export let map;
 export let markersLayer;
 export let currentFilter = 'all';
@@ -65,25 +67,29 @@ export function applyTheme() {
 if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
 function createIcon(color, status, iconUrl) {
+    const safeColor = /^#[\da-f]{3,8}$/i.test(color) || ['red', 'blue', 'orange'].includes(color)
+        ? color
+        : '#3498db';
     let animationClass = '';
     let rippleHtml = '';
     if (['fire', 'live'].includes(status)) {
         animationClass = 'anim-pulse'; 
-        rippleHtml = `<div class="ripple" style="background-color: ${color}"></div>`;
+        rippleHtml = `<div class="ripple" style="background-color: ${safeColor}"></div>`;
     } else {
         animationClass = 'anim-float'; 
     }
-    if (iconUrl) {
+    const safeIconUrl = getSafeHttpUrl(iconUrl);
+    if (safeIconUrl) {
         return L.divIcon({
             className: 'custom-div-icon',
-            html: `${rippleHtml}<div class="${animationClass} marker-pin" style="background-color: ${color};"><img src="${iconUrl}" alt="Logo" /></div>`,
+            html: `${rippleHtml}<div class="${animationClass} marker-pin" style="background-color: ${safeColor};"><img src="${escapeHTML(safeIconUrl)}" alt="Logo" /></div>`,
             iconSize: [40, 40],
             iconAnchor: [20, 42]
         });
     }
     return L.divIcon({
         className: 'custom-div-icon',
-        html: `${rippleHtml}<div class="${animationClass}" style='width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid ${color}; filter: drop-shadow(0 0 4px ${color});'></div>`,
+        html: `${rippleHtml}<div class="${animationClass}" style='width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid ${safeColor}; filter: drop-shadow(0 0 4px ${safeColor});'></div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 24]
     });
@@ -122,7 +128,8 @@ export function renderMarkers(places, userPos) {
         
         // --- BLINDAGEM CROSS-SITE SCRIPTING (XSS) ---
         const safeName = escapeHTML(place.name);
-        const safeWebsite = escapeHTML(place.website);
+        const websiteUrl = getSafeHttpUrl(place.website);
+        const safeWebsite = escapeHTML(websiteUrl);
         
         let distanceHtml = '';
         if (userPos) {
@@ -138,12 +145,12 @@ export function renderMarkers(places, userPos) {
             <div class="popup-card">
                 <div class="popup-header">
                     <div style="padding-right: 60px;">${safeName}</div>
-                    ${place.website ? `<a href="${safeWebsite}" target="_blank" class="popup-website-link" style="font-size: 12px; color: #a2d9ff;">🌐 ${safeName.split(' ')[0]}</a>` : ''}
+                    ${websiteUrl ? `<a href="${safeWebsite}" target="_blank" rel="noopener noreferrer" class="popup-website-link" style="font-size: 12px; color: #a2d9ff;">🌐 ${safeName.split(' ')[0]}</a>` : ''}
                 </div>
                 <div class="popup-body" style="padding-top:0;">
                     ${distanceHtml}
-                    <a href="promocao.html?id=${place.id}" class="popup-btn promo-btn">🎉 Ver Ofertas</a>
-                    <a href="${googleMapsUrl}" target="_blank" class="popup-btn">🚗 Como Chegar</a>
+                    <a href="promocao.html?id=${encodeURIComponent(String(place.id))}" class="popup-btn promo-btn">🎉 Ver Ofertas</a>
+                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn">🚗 Como Chegar</a>
                 </div>
             </div>
         `);

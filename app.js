@@ -73,6 +73,9 @@ initializeDB(() => {
             }
         }
     );
+}).catch((error) => {
+    console.error("DIVE: falha ao carregar os dados locais.", error);
+    showToast("Não foi possível carregar os dados locais. Confira o console para mais detalhes.");
 });
 
 // 4. Inicia Monitorador Logístico GPS (Escuta constante ligada junto com Renderizacao)
