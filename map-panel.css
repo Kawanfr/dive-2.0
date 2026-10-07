@@ -1,0 +1,290 @@
+.marker-icon-wrap {
+    position: relative;
+    width: 40px;
+    height: 40px;
+}
+
+.marker-triangle-wrap > div {
+    position: absolute;
+    top: 12px;
+    left: 8px;
+}
+
+.marker-offer-count {
+    position: absolute;
+    top: -5px;
+    right: -7px;
+    min-width: 19px;
+    height: 19px;
+    padding: 0 4px;
+    border: 2px solid #fff;
+    border-radius: 12px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 15px;
+    text-align: center;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+    z-index: 5;
+}
+
+.place-panel {
+    position: fixed;
+    z-index: 1100;
+    left: 50%;
+    bottom: 0;
+    width: min(100%, 620px);
+    max-height: min(56vh, 520px);
+    padding: 9px 18px calc(16px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    background: #fff;
+    color: #24313d;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.22);
+    transform: translate(-50%, calc(100% + 20px));
+    transition: transform 240ms ease;
+    pointer-events: none;
+    visibility: hidden;
+}
+
+.place-panel.is-open {
+    transform: translate(-50%, 0);
+    pointer-events: auto;
+    visibility: visible;
+}
+
+.place-panel-handle {
+    width: 42px;
+    height: 4px;
+    margin: 0 auto 12px;
+    border-radius: 4px;
+    background: #c8cdd2;
+}
+
+.place-panel-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    width: 34px;
+    height: 34px;
+    border: 0;
+    border-radius: 50%;
+    background: #eef1f4;
+    color: #34495e;
+    font-size: 25px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.place-panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-right: 34px;
+}
+
+.place-panel-heading h2 {
+    margin: 0 0 7px;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.place-open-status,
+.place-panel-distance {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.place-open-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+.place-open-status.open {
+    background: #e8f5e9;
+    color: #218c4a;
+}
+
+.place-open-status.closed {
+    background: #ffebee;
+    color: #c0392b;
+}
+
+.place-open-status.unknown {
+    background: #eef1f4;
+    color: #626e78;
+}
+
+.place-panel-distance {
+    padding-top: 4px;
+    color: #5c6975;
+    text-align: right;
+}
+
+.place-panel-hours {
+    margin: 10px 0 14px;
+    color: #66717b;
+    font-size: 13px;
+}
+
+.place-offers-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0 8px;
+}
+
+.place-offers-heading h3 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.place-offers-heading > span {
+    min-width: 21px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    background: #fff2d5;
+    color: #9b6600;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+}
+
+.place-offers-list {
+    display: grid;
+    gap: 8px;
+}
+
+.place-offer {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-height: 54px;
+    padding: 9px 11px;
+    border: 1px solid #e7ebef;
+    border-radius: 11px;
+    background: #f8fafb;
+}
+
+.place-offer-image {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.place-offer-copy {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.place-offer-copy strong {
+    font-size: 14px;
+}
+
+.place-offer-copy span {
+    color: #218c4a;
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.place-no-offers {
+    margin: 0;
+    color: #68737d;
+    font-size: 13px;
+}
+
+.place-panel-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.place-panel-more,
+.place-panel-route {
+    display: block;
+    padding: 11px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+}
+
+.place-panel-more {
+    flex: 1.4;
+    background: #8e44ad;
+    color: #fff;
+}
+
+.place-panel-route {
+    flex: 1;
+    background: #eef1f4;
+    color: #34495e;
+}
+
+body.dark-mode .place-panel {
+    background: #1e1e1e;
+    color: #f0f0f0;
+}
+
+body.dark-mode .place-panel-hours,
+body.dark-mode .place-panel-distance {
+    color: #b4bdc5;
+}
+
+body.dark-mode .place-panel-close,
+body.dark-mode .place-offer {
+    border-color: #383838;
+    background: #2a2a2a;
+    color: #f0f0f0;
+}
+
+body.dark-mode .place-panel-route {
+    background: #383838;
+    color: #f0f0f0;
+}
+
+body.dark-mode .place-open-status.unknown {
+    background: #383838;
+    color: #d1d7dc;
+}
+
+@media (min-width: 700px) {
+    .place-panel {
+        bottom: 18px;
+        border-radius: 20px;
+    }
+}
+
+@media (max-width: 420px) {
+    .place-panel {
+        max-height: 52vh;
+        padding-right: 14px;
+        padding-left: 14px;
+    }
+
+    .place-panel-heading {
+        flex-direction: column;
+        gap: 7px;
+    }
+
+    .place-panel-distance {
+        padding-top: 0;
+        text-align: left;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .place-panel {
+        transition: none;
+    }
+}

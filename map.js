@@ -6,6 +6,10 @@ export let currentFilter = 'all';
 export let currentSearch = '';
 export let currentRadius = Infinity;
 
+let selectedPlaceId = null;
+let currentPlaces = [];
+let currentUserPosition = null;
+
 export function escapeHTML(str) {
     if (!str) return "";
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -23,6 +27,11 @@ export function initMap(elementId = 'map') {
     
     applyTheme(); // Aplica layers TILE (fundo) primeiro
     markersLayer = L.markerClusterGroup().addTo(map); // Depois adiciona agrupador
+
+    document.getElementById('place-panel-close')?.addEventListener('click', closePlacePanel);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closePlacePanel();
+    });
 }
 
 export function setCurrentFilter(f) { currentFilter = f; }
@@ -66,7 +75,7 @@ export function applyTheme() {
 
 if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
 
-function createIcon(color, status, iconUrl) {
+function createIcon(color, status, iconUrl, offerCount) {
     const safeColor = /^#[\da-f]{3,8}$/i.test(color) || ['red', 'blue', 'orange'].includes(color)
         ? color
         : '#3498db';
@@ -79,37 +88,129 @@ function createIcon(color, status, iconUrl) {
         animationClass = 'anim-float'; 
     }
     const safeIconUrl = getSafeHttpUrl(iconUrl);
+    const offerBadge = offerCount > 0
+        ? `<span class="marker-offer-count" aria-label="${offerCount} promoções">${offerCount > 99 ? '99+' : offerCount}</span>`
+        : '';
     if (safeIconUrl) {
         return L.divIcon({
             className: 'custom-div-icon',
-            html: `${rippleHtml}<div class="${animationClass} marker-pin" style="background-color: ${safeColor};"><img src="${escapeHTML(safeIconUrl)}" alt="Logo" /></div>`,
+            html: `${rippleHtml}<div class="marker-icon-wrap"><div class="${animationClass} marker-pin" style="background-color: ${safeColor};"><img src="${escapeHTML(safeIconUrl)}" alt="" /></div>${offerBadge}</div>`,
             iconSize: [40, 40],
             iconAnchor: [20, 42]
         });
     }
     return L.divIcon({
         className: 'custom-div-icon',
-        html: `${rippleHtml}<div class="${animationClass}" style='width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid ${safeColor}; filter: drop-shadow(0 0 4px ${safeColor});'></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 24]
+        html: `${rippleHtml}<div class="marker-icon-wrap marker-triangle-wrap"><div class="${animationClass}" style='width: 0; height: 0; border-left: 12px solid transparent; border-right: 12px solid transparent; border-top: 24px solid ${safeColor}; filter: drop-shadow(0 0 4px ${safeColor});'></div>${offerBadge}</div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 36]
     });
+}
+
+function getTodaySchedule(schedule = {}) {
+    const day = new Date().getDay();
+    const values = schedule.all ||
+        (day === 0 ? (schedule.sunday || schedule.sun) :
+            day === 6 ? (schedule.saturday || schedule.sat) :
+                (schedule.weekdays || schedule.week));
+    if (!Array.isArray(values) || values.length < 2) return null;
+    const [opens, closes] = values;
+    if (!Number.isFinite(opens) || !Number.isFinite(closes) || (opens === 0 && closes === 0)) return null;
+    return [opens, closes];
+}
+
+function renderPlacePanel(place) {
+    const panel = document.getElementById('place-panel');
+    const content = document.getElementById('place-panel-content');
+    if (!panel || !content || !place) return;
+
+    const name = escapeHTML(place.name);
+    const offers = (place.offers || []).filter(offer => offer.expiresAt > Date.now());
+    const schedule = getTodaySchedule(place.schedule);
+    let openStatus = 'Horário não informado';
+    let openClass = 'unknown';
+    if (schedule) {
+        const now = new Date();
+        const minutesNow = now.getHours() * 60 + now.getMinutes();
+        const isOpen = minutesNow >= schedule[0] * 60 && minutesNow < schedule[1] * 60;
+        openStatus = isOpen ? 'Aberta agora' : 'Fechada agora';
+        openClass = isOpen ? 'open' : 'closed';
+    }
+
+    const hours = place.hours
+        ? `<p class="place-panel-hours">${escapeHTML(String(place.hours).replace(/^🕒\s*/, ''))}</p>`
+        : '';
+    const websiteUrl = getSafeHttpUrl(place.website);
+    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords[0]},${place.coords[1]}`;
+    const distance = currentUserPosition && place.coords
+        ? `<span class="place-panel-distance">📍 ${Math.round(map.distance(currentUserPosition, place.coords))} m de você</span>`
+        : '<span class="place-panel-distance">📍 Ative a localização para ver a distância</span>';
+
+    const offersContent = offers.length
+        ? `<div class="place-offers-list">${offers.map(offer => {
+            const imageUrl = getSafeHttpUrl(offer.image || offer.photo);
+            const image = imageUrl
+                ? `<img class="place-offer-image" src="${escapeHTML(imageUrl)}" alt="" loading="lazy">`
+                : '';
+            return `<article class="place-offer">${image}<div class="place-offer-copy"><strong>${escapeHTML(offer.product)}</strong><span>${escapeHTML(offer.price)}</span></div></article>`;
+        }).join('')}</div>`
+        : '<p class="place-no-offers">Nenhuma promoção ativa no momento.</p>';
+
+    content.innerHTML = `
+        <div class="place-panel-heading">
+            <div>
+                <h2>${name}</h2>
+                <span class="place-open-status ${openClass}">${openStatus}</span>
+            </div>
+            ${distance}
+        </div>
+        ${hours}
+        <div class="place-offers-heading"><h3>Promoções ativas</h3><span>${offers.length}</span></div>
+        ${offersContent}
+        <div class="place-panel-actions">
+            <a class="place-panel-more" href="promocao.html?id=${encodeURIComponent(String(place.id))}">Ver detalhes e contribuir</a>
+            <a class="place-panel-route" href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer">Como chegar</a>
+            ${websiteUrl ? `<a class="place-panel-route" href="${escapeHTML(websiteUrl)}" target="_blank" rel="noopener noreferrer">Site da loja</a>` : ''}
+        </div>
+    `;
+    panel.classList.add('is-open');
+    panel.setAttribute('aria-hidden', 'false');
+}
+
+export function closePlacePanel() {
+    selectedPlaceId = null;
+    const panel = document.getElementById('place-panel');
+    panel?.classList.remove('is-open');
+    panel?.setAttribute('aria-hidden', 'true');
+}
+
+function openPlacePanel(place) {
+    selectedPlaceId = String(place.id);
+    renderPlacePanel(place);
 }
 
 export function focusOnPlace(placeCoords) {
     markersLayer.eachLayer((layer) => {
         const latLng = layer.getLatLng();
         if (latLng.lat === placeCoords[0] && latLng.lng === placeCoords[1]) {
-            markersLayer.zoomToShowLayer(layer, () => layer.openPopup());
+            markersLayer.zoomToShowLayer(layer, () => {
+                const place = currentPlaces.find(item => item.coords?.[0] === latLng.lat && item.coords?.[1] === latLng.lng);
+                if (place) openPlacePanel(place);
+            });
         }
     });
 }
 
 export function renderMarkers(places, userPos) {
     if(!markersLayer) return;
+    currentPlaces = places;
+    currentUserPosition = userPos;
     markersLayer.clearLayers();
     
     const filteredPlaces = places.filter(place => {
+        if (currentFilter === 'promocoes' && !(place.offers || []).some(offer => offer.expiresAt > Date.now())) return false;
         let matchStatus = currentFilter === 'all' || 
+            currentFilter === 'promocoes' ||
             (currentFilter === 'agitado' && ['fire', 'live'].includes(place.status)) ||
             (currentFilter === 'tranquilo' && place.status === 'chill') ||
             (place.status === currentFilter);
@@ -127,32 +228,17 @@ export function renderMarkers(places, userPos) {
         if(!place.coords) return;
         
         // --- BLINDAGEM CROSS-SITE SCRIPTING (XSS) ---
-        const safeName = escapeHTML(place.name);
-        const websiteUrl = getSafeHttpUrl(place.website);
-        const safeWebsite = escapeHTML(websiteUrl);
-        
-        let distanceHtml = '';
-        if (userPos) {
-            const dist = map.distance(userPos, place.coords);
-            distanceHtml = `<div class="popup-distance distance-display" data-lat="${place.coords[0]}" data-lng="${place.coords[1]}">📏 ${Math.round(dist)}m de você</div>`;
-        }
-        const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${place.coords[0]},${place.coords[1]}`;
-
-        L.marker(place.coords, {
-            icon: createIcon(place.color, place.status, place.icon),
-            title: safeName
-        }).addTo(markersLayer).bindPopup(`
-            <div class="popup-card">
-                <div class="popup-header">
-                    <div style="padding-right: 60px;">${safeName}</div>
-                    ${websiteUrl ? `<a href="${safeWebsite}" target="_blank" rel="noopener noreferrer" class="popup-website-link" style="font-size: 12px; color: #a2d9ff;">🌐 ${safeName.split(' ')[0]}</a>` : ''}
-                </div>
-                <div class="popup-body" style="padding-top:0;">
-                    ${distanceHtml}
-                    <a href="promocao.html?id=${encodeURIComponent(String(place.id))}" class="popup-btn promo-btn">🎉 Ver Ofertas</a>
-                    <a href="${googleMapsUrl}" target="_blank" rel="noopener noreferrer" class="popup-btn">🚗 Como Chegar</a>
-                </div>
-            </div>
-        `);
+        const marker = L.marker(place.coords, {
+            icon: createIcon(place.color, place.status, place.icon, (place.offers || []).filter(offer => offer.expiresAt > Date.now()).length),
+            title: place.name
+        }).addTo(markersLayer);
+        marker.on('click', () => openPlacePanel(place));
     });
+
+    const selectedPlace = places.find(place => String(place.id) === selectedPlaceId);
+    if (selectedPlace && filteredPlaces.some(place => String(place.id) === selectedPlaceId)) {
+        renderPlacePanel(selectedPlace);
+    } else if (selectedPlaceId) {
+        closePlacePanel();
+    }
 }

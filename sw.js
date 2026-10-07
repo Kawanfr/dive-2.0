@@ -1,4 +1,4 @@
-const CACHE_NAME = 'dive-v57';
+const CACHE_NAME = 'dive-v60';
 const APP_SHELL = [
     './',
     './index.html',
@@ -6,6 +6,7 @@ const APP_SHELL = [
     './admin-panel.html',
     './editor.js',
     './style.css',
+    './map-panel.css',
     './app.js',
     './map.js',
     './gps.js',

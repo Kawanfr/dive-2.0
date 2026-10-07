@@ -64,7 +64,74 @@ const defaultPayload = [
 
 export const globalEstablishments = []; // Usando const para mutação segura (evita perda de referência)
 
+const DEMO_PROMOTION_CATALOG = [
+    [
+        { product: "Arroz tipo 1 5 kg", price: "R$ 24,90" },
+        { product: "Café torrado 500 g", price: "R$ 16,49" },
+        { product: "Azeite extra virgem 500 ml", price: "R$ 27,90" }
+    ],
+    [
+        { product: "Leite integral 1 L (un.)", price: "R$ 4,79" },
+        { product: "Cerveja lata 350 ml (pack c/ 12)", price: "R$ 34,90" },
+        { product: "Detergente líquido 500 ml", price: "R$ 1,89" }
+    ],
+    [
+        { product: "Filé de peito de frango (kg)", price: "R$ 17,90" },
+        { product: "Feijão carioca 1 kg", price: "R$ 7,49" },
+        { product: "Papel higiênico (pack c/ 12)", price: "R$ 15,90" }
+    ],
+    [
+        { product: "Banana nanica (kg)", price: "R$ 4,99" },
+        { product: "Ovos brancos (dúzia)", price: "R$ 10,90" },
+        { product: "Óleo de soja 900 ml", price: "R$ 5,79" }
+    ],
+    [
+        { product: "Açúcar refinado 1 kg", price: "R$ 3,99" },
+        { product: "Refrigerante 2 L", price: "R$ 7,49" },
+        { product: "Acém bovino (kg)", price: "R$ 29,90" }
+    ]
+];
+
 let listeners = [];
+
+function seedDemoPromotionsOnce() {
+    const seedKey = 'dive_demo_promotions_seeded_v1';
+    let isSeeded;
+    try {
+        isSeeded = localStorage.getItem(seedKey) === 'true';
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`Não foi possível verificar a simulação de promoções: ${detail}`);
+    }
+    if (isSeeded) return;
+
+    const now = Date.now();
+    const seededEstablishments = globalEstablishments.map((place, placeIndex) => {
+        const currentOffers = place.offers || [];
+        if (currentOffers.some(offer => offer.isDemo === true)) return place;
+
+        const catalog = DEMO_PROMOTION_CATALOG[placeIndex % DEMO_PROMOTION_CATALOG.length];
+        const demoOffers = catalog.map((offer, offerIndex) => ({
+            ...offer,
+            id: now + placeIndex * 10 + offerIndex,
+            up: 0,
+            down: 0,
+            voters: [],
+            expiresAt: now + (4 * 60 * 60 * 1000),
+            isDemo: true
+        }));
+        return { ...place, offers: [...currentOffers, ...demoOffers] };
+    });
+
+    persistEstablishments(seededEstablishments);
+    replaceEstablishments(seededEstablishments);
+    try {
+        localStorage.setItem(seedKey, 'true');
+    } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        throw new Error(`As promoções foram salvas, mas não foi possível registrar a simulação: ${detail}`);
+    }
+}
 
 function validateEstablishments(data) {
     if (!Array.isArray(data)) {
@@ -163,6 +230,7 @@ export async function initializeDB(onReady) {
         persistEstablishments(initialData);
         replaceEstablishments(initialData);
     }
+    seedDemoPromotionsOnce();
     if (onReady) onReady();
 }
 

@@ -19,6 +19,7 @@
 
           <!-- Para o CSS -->
         <link rel="stylesheet" href="style.css">
+          <link rel="stylesheet" href="map-panel.css">
 
            <!-- Manifesto PWA -->
         <link rel="manifest" href="manifest.json">
@@ -37,6 +38,7 @@
                 <button class="filter-btn active" type="button" data-filter="all" aria-pressed="true">Todos</button>
                 <button class="filter-btn" type="button" data-filter="agitado" aria-pressed="false">🔥 Agitado</button>
                 <button class="filter-btn" type="button" data-filter="tranquilo" aria-pressed="false">🧊 Tranquilo</button>
+                <button class="filter-btn" type="button" data-filter="promocoes" aria-pressed="false">🏷️ Promoções</button>
             </div>
 
             <!-- Container de Notificações Visuais -->
@@ -44,6 +46,12 @@
 
             <!-- Container do Mapa -->
              <div id="map" aria-label="Mapa interativo"></div>
+
+            <section id="place-panel" class="place-panel" aria-label="Detalhes da loja selecionada" aria-hidden="true">
+                <div class="place-panel-handle" aria-hidden="true"></div>
+                <button id="place-panel-close" class="place-panel-close" type="button" aria-label="Fechar detalhes da loja">×</button>
+                <div id="place-panel-content"></div>
+            </section>
 
              <!-- Botão de Centralizar -->
              <button id="center-btn" type="button" aria-label="Centralizar mapa">📍</button>
@@ -64,7 +72,7 @@
 
               <!-- Nossa Lógica -->
 
-               <script type="module" src="app.js?v=50"></script>
+               <script type="module" src="app.js?v=52"></script>
             
         </body>
 </html>

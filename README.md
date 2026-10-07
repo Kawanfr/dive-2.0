@@ -1,35 +1,91 @@
-# DIVE 2.0 📍 (Waze de Ofertas Edition)
+# DIVE 2.0
 
-O **DIVE 2.0** evoluiu drasticamente. Deixamos para trás a era dos "Robôs de Web Scraping" e "Painéis Engessados de Gerentes" para nos tornarmos oficialmente um aplicativo 100% focado no poder da comunidade: O **Waze de Supermercados**.
+Mapa comunitário de estabelecimentos e promoções. O DIVE permite localizar lojas, consultar ofertas reportadas, contribuir com preços e visualizar informações úteis diretamente no mapa.
 
-> ℹ️ **Status do Projeto:** Trabalhando localmente com **localStorage** para prototipação ágil, em conjunto com o poderoso PWA (Progressive Web App). Agora, os próprios consumidores nas ruas alimentam o mapa em tempo real. Se uma loja "bomba" de preços baixos, o mapa acende; se a loja esvazia de promoções, ele esfria.
+> **Estado atual:** protótipo web progressivo (PWA). Estabelecimentos, promoções e votos são guardados no `localStorage` do navegador. Não existe backend ou sincronização entre usuários; os dados não são compartilhados entre dispositivos ou navegadores.
 
-## 🚀 Novas Super Funcionalidades (O Motor Waze)
+## Funcionalidades
 
-*   **Crowdsourcing Nativo:** A página de promoções agora possui um radar comunitário da galera. Qualquer pessoa, de dentro do mercado, preenche anonimamente um "Produto" e "Preço". A oferta sobe para a nuvem na mesma hora!
-*   **Inteligência Termométrica Visual:** As lojas no mapa trocam de vida e cor sozinhas baseadas na febre orgânica:
-    *   `🧊 Tranquilo (Azul)`: Nenhuma oferta postada.
-    *   `✨ Movimento Moderado (Laranja)`: 1 a 4 pessoas reportaram preços.
-    *   `🔥 Fogo Intenso (Vermelho Pulsante)`: Quando bater um combo de 5 promoções válidas ativas do povo. Dispara notificações PUSH no bolso de quem estiver num raio de 1.5km.
-*   **Tribunal da Comunidade (Auditoria UP/DOWN):** Como tudo é comunitário, o DIVE é regido pelo coletivo. Se um engraçadinho reporta o "Miojo a 1 centavo", os usuários de verdade apertam 👎. Se uma oferta receber **3 Deslikes**, ela desaparece misteriosamente do banco de dados global para sempre.
-*   **Time-Sense de Urgência:** Promoções têm vida curta. O sistema calcula a idade viva da inserção (`"Há 15 min"`, `"Agora mesmo!"`) empurrando os clientes com gatilho mental para a loja. Ao bater 4 horas, o alerta se autodestrói como no Mercado Real.
+### Mapa
 
-## 👑 O Painel Master Consolidado
-Cortamos excessos e complexidades de subcamadas:
+- Exibe os estabelecimentos em um mapa Leaflet com agrupamento de marcadores.
+- Permite pesquisar lojas por nome e filtrar por categoria ou distância.
+- O filtro **Promoções** mostra estabelecimentos com ofertas ativas.
+- Cada marcador pode mostrar a quantidade de promoções válidas da loja.
+- Ao tocar em um marcador, abre-se um painel inferior com distância aproximada, situação de funcionamento, horário e ofertas ativas.
+- O painel oferece acesso à página de detalhes, à rota no Google Maps e, quando disponível, ao site do estabelecimento.
+- A distância exige permissão de localização do navegador. Sem GPS, as informações que dependem da localização não são exibidas.
 
-*   **A Morte dos Gerentes:** Os donos dos supermercados não precisam mais ganhar contas manuais. O sistema depende dos clientes da loja deles. 
-*   **Super Aba Master (`/admin-panel.html`):** Um arquivo unificando Criação e Pulverização de mercado do banco de dados geral.
+### Promoções da comunidade
 
-## 🛡️ Camadas de Guerra Sistêmica e Segurança Integral
-Criamos uma blindagem formidável, dado o fato que anônimos brincam com pacotes de dados reais o tempo todo:
-1.  **Datalist & Rate Limit:** O sistema tem limite biológico de clique em cache. Meninos maldosos não conseguirão apertar "F5 Send" seguidamente, há fadigas severas contra DDOS orgânicos com barreiras de 1 minuto inteiras (`localStorage`). E auto-completamento guiado no UX acelera relatos sem estragar dados usando `<datalist>`.
-2.  **Lava de XSS `DOMPurify`:** Todo código injetado livremente no preenchimento é derretido por regras severas de sanitização JS antes de chegar a renderização visual das páginas (Previne Hijack de cookie visual de usuários normais).
+- A página `promocao.html` exibe o produto, o preço, o tempo desde o reporte e os votos.
+- É possível reportar produto e preço. Uma oferta permanece ativa por até quatro horas.
+- O navegador limita novos reports a um por minuto.
+- Cada navegador recebe um identificador local para limitar votos repetidos. Três votos negativos removem a oferta dos dados daquele navegador.
+- O formulário de reporte recebe produto e preço; não há envio de fotos pela interface atual.
+- O DIVE pode exibir uma imagem se uma oferta já possuir uma URL de imagem válida.
 
-## 📂 Nova Estrutura Arquitetural (Modular)
-*   **`app.js` e `map.js` e `gps.js`**: Os generais e maestros das camadas da física, satélite e pintura vetorial do MapBox/Leaflet. Responsivos aos gatilhos vindos da nova `database.js` WebSocket Listener.
-*   **`promocao.html`**: A página rainha das dinâmicas Waze. O berço de toda as injeções orgânicas da comunidade.
+### Cadastro de estabelecimentos
 
-## 🔮 O Futuro de DIVE
-*   [x] Pop-up Instalador Direto PWA (Para facilitar adoção na Tela Inicial dos Smartphones).
-*   [x] Botão de Direcionamento Nativo (Waze de Rota) direto das ofertas.
-*   [ ] Algoritmos Avançados de Clustering quando cidades transbordarem para +10.000 mercados no mapa de uma vez.
+O painel `admin-panel.html` permite cadastrar, editar e excluir lojas. O cadastro pode consultar o CEP pelo ViaCEP e obter coordenadas do endereço pelo Nominatim/OpenStreetMap. Também permite informar horários, um ícone e o site oficial.
+
+O painel é chamado de “Painel Master”, mas **não possui autenticação**. Alterações afetam somente os dados locais do navegador em que são feitas.
+
+### PWA e notificações
+
+- O manifesto `manifest.json` permite instalar o DIVE em navegadores compatíveis.
+- O service worker `sw.js` armazena os arquivos principais e pode manter em cache partes do mapa já acessadas.
+- A localização e as notificações do navegador dependem de permissão do usuário.
+- Bibliotecas do mapa e alguns serviços externos são carregados por CDN; a primeira utilização requer conexão com a internet.
+
+## Como executar
+
+O projeto é composto por HTML, CSS e módulos JavaScript e não possui um processo de build ou gerenciador de dependências configurado.
+
+1. Abra a pasta do projeto em um servidor HTTP local, por exemplo, usando a extensão **Live Server** do Visual Studio Code.
+2. Acesse `index.html` pelo endereço local fornecido pelo servidor.
+3. Para testar cadastro, acesse `admin-panel.html`.
+4. Para consultar ou reportar ofertas, abra o painel de uma loja no mapa e escolha **Ver detalhes e contribuir**.
+
+Não abra o projeto diretamente por `file://`: módulos JavaScript, geolocalização, service worker e instalação PWA dependem de um contexto HTTP seguro. `localhost` é considerado seguro pelos navegadores modernos.
+
+## Armazenamento e dados de teste
+
+Os dados são serializados na chave `dive_db` do `localStorage`. A chave `dive_uid` identifica o navegador para a lógica de votação e `dive_last_post` registra o intervalo entre reports. O armazenamento pode ser inspecionado nas ferramentas de desenvolvedor do navegador.
+
+Na primeira inicialização do banco local, o protótipo adiciona três promoções de exemplo às lojas presentes naquele momento. Essas ofertas são marcadas internamente com `isDemo: true`, expiram em quatro horas e não são adicionadas novamente quando a inicialização já foi registrada. As ofertas servem para avaliação visual e podem ser removidas posteriormente dos dados locais usando essa marca. Limpar todo o armazenamento do site também remove os estabelecimentos e outras informações salvas nesse navegador.
+
+## Estrutura do projeto
+
+| Arquivo | Responsabilidade |
+| --- | --- |
+| `index.html` | Página principal do mapa, filtros e painel de loja. |
+| `app.js` | Inicialização da aplicação, filtros, integração com GPS e atualizações da interface. |
+| `map.js` | Criação do mapa Leaflet, marcadores e painel inferior. |
+| `map-panel.css` | Estilos do painel de loja e do contador de ofertas nos marcadores. |
+| `gps.js` | Solicitação e acompanhamento da localização do usuário. |
+| `database.js` | Dados iniciais, validação, persistência local e sincronização entre abas do mesmo navegador. |
+| `admin-panel.html` | Interface de cadastro e manutenção de estabelecimentos. |
+| `editor.js` | Comportamento do painel administrativo e consultas de endereço. |
+| `promocao.html` | Detalhes e contribuição de ofertas para uma loja. |
+| `notifications.js` | Notificações do navegador e mensagens temporárias na interface. |
+| `pwa-installer.js` | Comportamento do botão de instalação do PWA. |
+| `manifest.json` | Metadados de instalação do aplicativo. |
+| `sw.js` | Cache de recursos, suporte offline limitado e eventos do service worker. |
+| `style.css` | Estilos compartilhados da aplicação. |
+
+## Limitações conhecidas
+
+- O uso de `localStorage` significa que os dados não são uma fonte compartilhada nem uma base remota.
+- A sincronização entre abas usa o evento `storage` e não sincroniza navegadores, dispositivos ou usuários.
+- O painel administrativo não autentica nem autoriza usuários.
+- Geocodificação, consulta de CEP, mapas e recursos externos dependem de serviços de terceiros e de conexão.
+- A interface de report não inclui upload de fotos.
+- O projeto não define testes automatizados, lint ou build em um `package.json`.
+
+## Tecnologias
+
+- HTML, CSS e JavaScript com módulos ES.
+- [Leaflet](https://leafletjs.com/) e [Leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster).
+- [DOMPurify](https://github.com/cure53/DOMPurify) na página de promoções.
+- OpenStreetMap, Nominatim e ViaCEP como serviços externos.
